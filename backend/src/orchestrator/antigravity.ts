@@ -1,11 +1,11 @@
-import { runIntentAgent } from '../agents/intentAgent'
-import { runContextAgent } from '../agents/contextAgent'
-import { runComplexityAgent } from '../agents/complexityAgent'
-import { runDiscoveryAgent } from '../agents/discoveryAgent'
-import { runMatchingAgent } from '../agents/matchingAgent'
-import { runPricingAgent } from '../agents/pricingAgent'
-import { runSchedulingAgent } from '../agents/schedulingAgent'
-import { runBookingAgent } from '../agents/bookingAgent'
+import { processIntent } from '../controllers/intentController'
+import { processContext } from '../controllers/contextController'
+import { processComplexity } from '../controllers/complexityController'
+import { processDiscovery } from '../controllers/discoveryController'
+import { processMatching } from '../controllers/matchingController'
+import { processPricing } from '../controllers/pricingController'
+import { processScheduling } from '../controllers/schedulingController'
+import { processBooking } from '../controllers/bookingController'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface OrchestratorInput {
@@ -43,7 +43,7 @@ export async function runAntigravityOrchestrator(
   try {
     // ── AGENT 1: Intent ──────────────────────────────
     console.log('→ [1/8] IntentAgent running...')
-    const intent = await runIntentAgent(input.userInput, sessionId)
+    const intent = await processIntent(input.userInput, sessionId)
     console.log(`   Language: ${intent.language}, Confidence: ${intent.confidence}, Service: ${intent.service}`)
 
     if (intent.clarificationNeeded) {
@@ -59,22 +59,22 @@ export async function runAntigravityOrchestrator(
 
     // ── AGENT 2: Context ─────────────────────────────
     console.log('→ [2/8] ContextAgent running...')
-    const context = await runContextAgent(intent, input.userId, sessionId)
+    const context = await processContext(intent, input.userId, sessionId)
     console.log(`   Returning user: ${context.isReturningUser}, Loyalty pts: ${context.loyaltyPoints}`)
 
     // ── AGENT 3: Complexity ──────────────────────────
     console.log('→ [3/8] ComplexityAgent running...')
-    const complexity = await runComplexityAgent(intent, sessionId)
+    const complexity = await processComplexity(intent, sessionId)
     console.log(`   Complexity: ${complexity.complexity}, Duration: ${complexity.estimatedDurationHours}h`)
 
     // ── AGENT 4: Discovery ───────────────────────────
     console.log('→ [4/8] DiscoveryAgent running...')
-    const discovery = await runDiscoveryAgent(intent, complexity, sessionId)
+    const discovery = await processDiscovery(intent, complexity, sessionId)
     console.log(`   Found ${discovery.totalFound} candidates in ${discovery.searchArea}`)
 
     // ── AGENT 5: Matching ────────────────────────────
     console.log('→ [5/8] MatchingAgent running...')
-    const matching = await runMatchingAgent(
+    const matching = await processMatching(
       discovery, intent, context,
       input.requestedDate, input.requestedTime, sessionId
     )
@@ -92,12 +92,12 @@ export async function runAntigravityOrchestrator(
 
     // ── AGENT 6: Pricing ─────────────────────────────
     console.log('→ [6/8] PricingAgent running...')
-    const pricing = await runPricingAgent(matching.topProvider, intent, complexity, context, sessionId)
+    const pricing = await processPricing(matching.topProvider, intent, complexity, context, sessionId)
     console.log(`   Total: PKR ${pricing.total}`)
 
     // ── AGENT 7: Scheduling ──────────────────────────
     console.log('→ [7/8] SchedulingAgent running...')
-    const scheduling = await runSchedulingAgent(
+    const scheduling = await processScheduling(
       matching.topProvider, input.requestedDate, input.requestedTime,
       complexity.estimatedDurationHours, sessionId
     )
@@ -105,7 +105,7 @@ export async function runAntigravityOrchestrator(
 
     // ── AGENT 8: Booking ─────────────────────────────
     console.log('→ [8/8] BookingAgent running...')
-    const booking = await runBookingAgent(
+    const booking = await processBooking(
       input.userId, matching.topProvider, pricing, scheduling,
       complexity, input.userInput,
       input.location ?? intent.location, sessionId

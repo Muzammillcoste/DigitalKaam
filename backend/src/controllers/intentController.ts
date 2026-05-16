@@ -14,7 +14,7 @@ export interface IntentOutput {
   rawInput: string
 }
 
-export async function runIntentAgent(userInput: string, sessionId: string): Promise<IntentOutput> {
+export async function processIntent(userInput: string, sessionId: string): Promise<IntentOutput> {
   const prompt = `
 You are an AI assistant for a service booking platform in Pakistan.
 Analyze the following user request and extract structured information.

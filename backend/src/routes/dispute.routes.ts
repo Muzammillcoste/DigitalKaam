@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { runDisputeAgent, DisputeType } from '../agents/disputeAgent'
+import { createDisputeTicket, DisputeType } from '../controllers/disputeController'
 import { supabase } from '../lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -11,7 +11,7 @@ router.post('/', async (req: Request, res: Response) => {
   if (!bookingId || !userId || !providerId || !disputeType) {
     return res.status(400).json({ error: 'bookingId, userId, providerId, disputeType are required' })
   }
-  const result = await runDisputeAgent(
+  const result = await createDisputeTicket(
     bookingId, userId, providerId,
     disputeType as DisputeType,
     description ?? '',
@@ -41,5 +41,19 @@ router.get('/user/:userId', async (req: Request, res: Response) => {
   if (error) return res.status(500).json({ error: error.message })
   return res.json(data)
 })
+
+// PATCH /api/dispute/:disputeId
+router.patch('/:disputeId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from('disputes').update(req.body).eq('id', req.params.disputeId).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+// DELETE /api/dispute/:disputeId
+router.delete('/:disputeId', async (req: Request, res: Response) => {
+  const { error } = await supabase.from('disputes').delete().eq('id', req.params.disputeId);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(204).send();
+});
 
 export default router

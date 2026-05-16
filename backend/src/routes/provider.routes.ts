@@ -25,6 +25,27 @@ router.get('/:providerId', async (req: Request, res: Response) => {
   return res.json(data)
 })
 
+// POST /api/provider
+router.post('/', async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from('providers').insert([req.body]).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+});
+
+// PATCH /api/provider/:providerId
+router.patch('/:providerId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from('providers').update(req.body).eq('id', req.params.providerId).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+// DELETE /api/provider/:providerId
+router.delete('/:providerId', async (req: Request, res: Response) => {
+  const { error } = await supabase.from('providers').delete().eq('id', req.params.providerId);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(204).send();
+});
+
 // GET /api/provider/:providerId/availability — provider's schedule
 router.get('/:providerId/availability', async (req: Request, res: Response) => {
   const { date } = req.query

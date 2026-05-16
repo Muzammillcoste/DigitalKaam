@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
-import { Provider, DiscoveryOutput } from './discoveryAgent'
-import { IntentOutput } from './intentAgent'
-import { ContextOutput } from './contextAgent'
+import { Provider, DiscoveryOutput } from './discoveryController'
+import { IntentOutput } from './intentController'
+import { ContextOutput } from './contextController'
 
 export interface RankedProvider extends Provider {
   matchScore: number
@@ -45,7 +45,7 @@ function normalize(value: number, min: number, max: number): number {
   return Math.max(0, Math.min(1, (value - min) / (max - min)))
 }
 
-export async function runMatchingAgent(
+export async function processMatching(
   discovery: DiscoveryOutput,
   intent: IntentOutput,
   context: ContextOutput,

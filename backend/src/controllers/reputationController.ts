@@ -8,7 +8,7 @@ export interface ReputationOutput {
   matchingImpact: string
 }
 
-export async function runReputationAgent(
+export async function updateReputation(
   bookingId: string,
   providerId: string,
   userId: string,

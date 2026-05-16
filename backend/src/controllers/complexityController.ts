@@ -1,6 +1,6 @@
 import { callGemini } from '../lib/gemini'
 import { supabase } from '../lib/supabase'
-import { IntentOutput } from './intentAgent'
+import { IntentOutput } from './intentController'
 
 export interface ComplexityOutput {
   complexity: 'basic' | 'intermediate' | 'complex'
@@ -10,7 +10,7 @@ export interface ComplexityOutput {
   confidence: number
 }
 
-export async function runComplexityAgent(intent: IntentOutput, sessionId: string): Promise<ComplexityOutput> {
+export async function processComplexity(intent: IntentOutput, sessionId: string): Promise<ComplexityOutput> {
   const prompt = `
 You are a service complexity classifier for a home services platform in Pakistan.
 

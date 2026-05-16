@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { IntentOutput } from './intentAgent'
+import { IntentOutput } from './intentController'
 
 export interface ContextOutput {
   userId: string
@@ -11,7 +11,7 @@ export interface ContextOutput {
   isReturningUser: boolean
 }
 
-export async function runContextAgent(intent: IntentOutput, userId: string, sessionId: string): Promise<ContextOutput> {
+export async function processContext(intent: IntentOutput, userId: string, sessionId: string): Promise<ContextOutput> {
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('*')

@@ -1,8 +1,8 @@
 import { supabase } from '../lib/supabase'
-import { IntentOutput } from './intentAgent'
-import { ComplexityOutput } from './complexityAgent'
-import { RankedProvider } from './matchingAgent'
-import { ContextOutput } from './contextAgent'
+import { IntentOutput } from './intentController'
+import { ComplexityOutput } from './complexityController'
+import { RankedProvider } from './matchingController'
+import { ContextOutput } from './contextController'
 
 export interface PriceBreakdown {
   visitFee: number
@@ -22,7 +22,7 @@ export interface PricingOutput {
   alternativeBudgetNote?: string
 }
 
-export async function runPricingAgent(
+export async function processPricing(
   provider: RankedProvider,
   intent: IntentOutput,
   complexity: ComplexityOutput,

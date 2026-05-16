@@ -35,7 +35,7 @@ const STATUS_PROVIDER_MESSAGES: Record<string, string> = {
   completed: 'Job marked as complete. Waiting for customer feedback.',
 }
 
-export async function runLifecycleAgent(
+export async function updateLifecycleStatus(
   bookingId: string,
   newStatus: LifecycleStatus,
   completionPhotoUrl?: string,

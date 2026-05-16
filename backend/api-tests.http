@@ -1,0 +1,90 @@
+### DigitalKaam CRUD API Tests
+# Make sure to run `npm run dev` in the backend folder first.
+
+@baseUrl = http://127.0.0.1:3000/api
+
+### Health Check
+GET http://127.0.0.1:3000/health
+
+### -----------------------------------------------------
+### 1. PROVIDERS
+### -----------------------------------------------------
+
+### List all providers
+GET {{baseUrl}}/provider
+
+### Create a new provider
+POST {{baseUrl}}/provider
+Content-Type: application/json
+
+{
+  "name": "Test Electrician",
+  "phone": "0300-1234567",
+  "email": "test@digitalkaam.pk",
+  "service_type": "Electrician",
+  "specialization": "General Wiring",
+  "experience_years": 5,
+  "hourly_rate": 800,
+  "area": "Gulshan",
+  "status": "active"
+}
+
+### -----------------------------------------------------
+### 2. USERS
+### -----------------------------------------------------
+
+### List all users
+GET {{baseUrl}}/users
+
+### Create a new user
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "full_name": "Test Customer",
+  "phone": "0311-9876543",
+  "email": "customer@test.com",
+  "home_area": "DHA"
+}
+
+### -----------------------------------------------------
+### 3. BOOKINGS
+### -----------------------------------------------------
+
+### List all bookings
+GET {{baseUrl}}/booking/user/<user-id>
+
+### -----------------------------------------------------
+### 4. DISPUTES
+### -----------------------------------------------------
+
+### List disputes for a user
+GET {{baseUrl}}/dispute/user/<user-id>
+
+### -----------------------------------------------------
+### 5. AVAILABILITY
+### -----------------------------------------------------
+
+### Get availability for a provider
+GET {{baseUrl}}/availability?providerId=<provider-uuid>
+
+### -----------------------------------------------------
+### 6. REPUTATION
+### -----------------------------------------------------
+
+### List reputation for a provider
+GET {{baseUrl}}/reputation?providerId=<provider-uuid>
+
+### -----------------------------------------------------
+### 7. TRACES
+### -----------------------------------------------------
+
+### List traces for a session
+GET {{baseUrl}}/traces?sessionId=<session-uuid>
+
+### -----------------------------------------------------
+### 8. FEEDBACK
+### -----------------------------------------------------
+
+### List feedback for a provider
+GET {{baseUrl}}/feedback?providerId=<provider-uuid>

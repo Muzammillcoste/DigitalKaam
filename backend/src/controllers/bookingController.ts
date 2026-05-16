@@ -1,9 +1,9 @@
 import { supabase } from '../lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
-import { RankedProvider } from './matchingAgent'
-import { PricingOutput } from './pricingAgent'
-import { SchedulingOutput } from './schedulingAgent'
-import { ComplexityOutput } from './complexityAgent'
+import { RankedProvider } from './matchingController'
+import { PricingOutput } from './pricingController'
+import { SchedulingOutput } from './schedulingController'
+import { ComplexityOutput } from './complexityController'
 
 export interface BookingOutput {
   bookingId: string
@@ -35,7 +35,7 @@ export interface Receipt {
   createdAt: string
 }
 
-export async function runBookingAgent(
+export async function processBooking(
   userId: string,
   provider: RankedProvider,
   pricing: PricingOutput,

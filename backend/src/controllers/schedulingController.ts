@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { RankedProvider } from './matchingAgent'
+import { RankedProvider } from './matchingController'
 
 export interface SchedulingOutput {
   slot: string
@@ -13,7 +13,7 @@ export interface SchedulingOutput {
   availabilityId: string | null
 }
 
-export async function runSchedulingAgent(
+export async function processScheduling(
   provider: RankedProvider,
   requestedDate: string,
   requestedTime: string,

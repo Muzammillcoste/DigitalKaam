@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { supabase } from '../lib/supabase'
-import { runLifecycleAgent } from '../agents/lifecycleAgent'
-import { runReputationAgent } from '../agents/reputationAgent'
+import { updateLifecycleStatus } from '../controllers/lifecycleController'
+import { updateReputation } from '../controllers/reputationController'
 import { v4 as uuidv4 } from 'uuid'
 
 const router = Router()
@@ -28,11 +28,32 @@ router.get('/user/:userId', async (req: Request, res: Response) => {
   return res.json(data)
 })
 
+// POST /api/booking
+router.post('/', async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from('bookings').insert([req.body]).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+});
+
+// PATCH /api/booking/:bookingId
+router.patch('/:bookingId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from('bookings').update(req.body).eq('id', req.params.bookingId).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+// DELETE /api/booking/:bookingId
+router.delete('/:bookingId', async (req: Request, res: Response) => {
+  const { error } = await supabase.from('bookings').delete().eq('id', req.params.bookingId);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(204).send();
+});
+
 // PATCH /api/booking/:bookingId/status — lifecycle status update (provider calls this)
 router.patch('/:bookingId/status', async (req: Request, res: Response) => {
   const { status, completionPhotoUrl, sessionId } = req.body
-  const result = await runLifecycleAgent(
-    req.params.bookingId,
+  const result = await updateLifecycleStatus(
+    req.params.bookingId as string,
     status,
     completionPhotoUrl,
     sessionId ?? uuidv4()
@@ -46,9 +67,9 @@ router.post('/:bookingId/feedback', async (req: Request, res: Response) => {
   if (!userId || !providerId || !rating) {
     return res.status(400).json({ error: 'userId, providerId, and rating are required' })
   }
-  const { runReputationAgent: repAgent } = await import('../agents/reputationAgent')
-  const result = await repAgent(
-    req.params.bookingId, providerId, userId,
+  const { updateReputation: repController } = await import('../controllers/reputationController')
+  const result = await repController(
+    req.params.bookingId as string, providerId, userId,
     rating, reviewText ?? '', sessionId ?? uuidv4()
   )
   return res.json(result)

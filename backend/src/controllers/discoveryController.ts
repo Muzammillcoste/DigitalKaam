@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
-import { IntentOutput } from './intentAgent'
-import { ComplexityOutput } from './complexityAgent'
+import { IntentOutput } from './intentController'
+import { ComplexityOutput } from './complexityController'
 
 export interface Provider {
   id: string
@@ -57,7 +57,7 @@ const AREA_COORDS: Record<string, { lat: number; lng: number }> = {
   unknown: { lat: 24.8607, lng: 67.0105 }, // Karachi center
 }
 
-export async function runDiscoveryAgent(
+export async function processDiscovery(
   intent: IntentOutput,
   complexity: ComplexityOutput,
   sessionId: string

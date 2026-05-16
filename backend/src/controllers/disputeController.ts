@@ -13,7 +13,7 @@ export interface DisputeOutput {
   message: string
 }
 
-export async function runDisputeAgent(
+export async function createDisputeTicket(
   bookingId: string,
   userId: string,
   providerId: string,
