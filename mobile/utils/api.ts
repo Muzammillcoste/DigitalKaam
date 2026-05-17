@@ -1,72 +1,130 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
+import { supabase } from './supabase';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+
+async function authHeaders(): Promise<HeadersInit> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 async function post<T>(path: string, body: object): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders(),
     body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
-  return res.json()
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  return res.json();
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`)
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
-  return res.json()
+  const res = await fetch(`${API_URL}${path}`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  return res.json();
 }
 
 async function patch<T>(path: string, body: object): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders(),
     body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
-  return res.json()
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  return res.json();
 }
 
-// ── Service ─────────────────────────────────────────────
+async function del<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ── Auth ────────────────────────────────────────────────────
+export const authApi = {
+  register: (body: {
+    full_name: string;
+    phone: string;
+    email: string;
+    password: string;
+    home_area?: string;
+  }) => post<{ access_token: string; userId: string; email: string }>('/api/auth/register', body),
+};
+
+// ── Chat ────────────────────────────────────────────────────
+export const chatApi = {
+  send: (sessionId: string, message: string) =>
+    post<{ response: string; userId: string }>('/api/chat', { sessionId, message }),
+};
+
+// ── Service (Orchestrator Pipeline) ─────────────────────────
 export const api = {
   service: {
     request: (body: {
-      userInput: string
-      userId: string
-      requestedDate?: string
-      requestedTime?: string
-      location?: string
+      userInput: string;
+      userId: string;
+      requestedDate?: string;
+      requestedTime?: string;
+      location?: string;
     }) => post('/api/service/request', body),
   },
 
   booking: {
     get: (bookingId: string) => get(`/api/booking/${bookingId}`),
-    listByUser: (userId: string) => get(`/api/booking/user/${userId}`),
-    updateStatus: (bookingId: string, status: string, completionPhotoUrl?: string, sessionId?: string) =>
-      patch(`/api/booking/${bookingId}/status`, { status, completionPhotoUrl, sessionId }),
-    submitFeedback: (bookingId: string, body: {
-      userId: string; providerId: string; rating: number; reviewText?: string; sessionId?: string
-    }) => post(`/api/booking/${bookingId}/feedback`, body),
+    listByUser: (userId: string) => get<any[]>(`/api/booking/user/${userId}`),
+    updateStatus: (
+      bookingId: string,
+      status: string,
+      completionPhotoUrl?: string,
+      sessionId?: string,
+    ) => patch(`/api/booking/${bookingId}/status`, { status, completionPhotoUrl, sessionId }),
+    submitFeedback: (
+      bookingId: string,
+      body: {
+        userId: string;
+        providerId: string;
+        rating: number;
+        reviewText?: string;
+        sessionId?: string;
+      },
+    ) => post(`/api/booking/${bookingId}/feedback`, body),
   },
 
   dispute: {
     open: (body: {
-      bookingId: string; userId: string; providerId: string
-      disputeType: string; description?: string; sessionId?: string
+      bookingId: string;
+      userId: string;
+      providerId: string;
+      disputeType: string;
+      description?: string;
+      sessionId?: string;
     }) => post('/api/dispute', body),
     get: (disputeId: string) => get(`/api/dispute/${disputeId}`),
-    listByUser: (userId: string) => get(`/api/dispute/user/${userId}`),
+    listByUser: (userId: string) => get<any[]>(`/api/dispute/user/${userId}`),
   },
 
   provider: {
     list: (serviceType?: string, area?: string) => {
-      const params = new URLSearchParams()
-      if (serviceType) params.set('serviceType', serviceType)
-      if (area) params.set('area', area)
-      return get(`/api/provider?${params.toString()}`)
+      const params = new URLSearchParams();
+      if (serviceType) params.set('serviceType', serviceType);
+      if (area) params.set('area', area);
+      return get<any[]>(`/api/provider?${params.toString()}`);
     },
     get: (providerId: string) => get(`/api/provider/${providerId}`),
     availability: (providerId: string, date?: string) =>
       get(`/api/provider/${providerId}/availability${date ? `?date=${date}` : ''}`),
     traces: (sessionId: string) => get(`/api/provider/traces/${sessionId}`),
   },
-}
+
+  users: {
+    getProfile: (userId: string) => get(`/api/users/${userId}`),
+    update: (userId: string, body: Partial<{ full_name: string; phone: string; home_area: string }>) =>
+      patch(`/api/users/${userId}`, body),
+  },
+};

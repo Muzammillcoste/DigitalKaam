@@ -1,39 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList } from 'react-native';
-import { supabase } from './utils/supabase';
+import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useAuthStore } from './src/store/authStore';
+import { useUIStore } from './src/store/uiStore';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { Toast } from './src/components/ui/Toast';
+import {
+  registerForPushNotifications,
+  addNotificationListener,
+  addResponseListener,
+} from './src/utils/notifications';
+import { api } from './utils/api';
 
 export default function App() {
-  const [todos, setTodos] = useState([]);
+  const { initialize, userId, setProfile } = useAuthStore();
+  const { showToast } = useUIStore();
 
   useEffect(() => {
-    const getTodos = async () => {
-      try {
-        const { data: todos, error } = await supabase.from('todos').select();
-
-        if (error) {
-          console.error('Error fetching todos:', error.message);
-          return;
-        }
-
-        if (todos && todos.length > 0) {
-          setTodos(todos);
-        }
-      } catch (error: any) {
-        console.error('Error fetching todos:', error.message);
-      }
-    };
-
-    getTodos();
+    initialize();
   }, []);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    api.users.getProfile(userId)
+      .then((p: any) => setProfile(p))
+      .catch(() => {});
+
+    registerForPushNotifications().then((token) => {
+      if (token) console.log('Push token:', token);
+    });
+
+    const notifSub = addNotificationListener((n) => {
+      const title = n.request.content.title;
+      if (title) showToast(title, 'info');
+    });
+
+    const respSub = addResponseListener((_r) => {});
+
+    return () => {
+      notifSub.remove();
+      respSub.remove();
+    };
+  }, [userId]);
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Todo List</Text>
-      <FlatList
-        data={todos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <Text key={item.id}>{item.name}</Text>}
-      />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar style="auto" />
+        <RootNavigator />
+        <Toast />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
-};
+}
