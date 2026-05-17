@@ -1,0 +1,24 @@
+# ADK Multi-Agent Orchestrator Implementation
+
+- [ ] **Step 1: SDK & Infrastructure Setup**
+  - [ ] Install `@google/genai` (as the engine for our ADK architecture).
+  - [ ] Create `src/adk/` directory for core ADK primitives (`Agent`, `Tool`, `Memory`).
+- [ ] **Step 2: Define ADK Tools**
+  - [ ] Create `ParseIntentTool`
+  - [ ] Create `FindProvidersTool` (Discovery)
+  - [ ] Create `CalculateQuoteTool` (Pricing)
+  - [ ] Create `CheckAvailabilityTool` (Scheduling)
+  - [ ] Create `ConfirmBookingTool` (Booking - requires explicit confirmation)
+  - [ ] Create `CreateTicketTool` (Dispute)
+- [x] **Step 3: Define Sub-Agents**
+  - [x] Implement `IntentAgent` (Natively in Orchestrator)
+  - [x] Implement `DiscoveryAgent`
+  - [x] Implement `PricingAgent`
+  - [x] Implement `SchedulingAgent`
+  - [x] Implement `BookingAgent`
+- [x] **Step 4: Build Main Orchestrator**
+  - [x] Create `OrchestratorAgent` that manages conversation history.
+  - [x] Equip Orchestrator with the Sub-Agent tools.
+- [x] **Step 5: Chat API Endpoint**
+  - [x] Implement `POST /api/chat` route.
+  - [x] Hook the route to the `OrchestratorAgent`.

@@ -7,6 +7,28 @@
 GET http://127.0.0.1:3000/health
 
 ### -----------------------------------------------------
+### CHAT WITH AI ORCHESTRATOR
+### -----------------------------------------------------
+
+### Talk to the ADK Orchestrator
+POST {{baseUrl}}/chat
+Content-Type: application/json
+
+{
+  "sessionId": "test-session-123",
+  "message": "I need an electrician in Gulshan"
+}
+
+### Talk to the ADK Orchestrator (Follow-up)
+POST {{baseUrl}}/chat
+Content-Type: application/json
+
+{
+  "sessionId": "test-session-123",
+  "message": "What will be the price for fixing a fan?"
+}
+
+### -----------------------------------------------------
 ### 1. PROVIDERS
 ### -----------------------------------------------------
 
