@@ -63,32 +63,40 @@ export async function processDiscovery(
   sessionId: string
 ): Promise<DiscoveryOutput> {
   const searchArea = intent.location !== 'unknown' ? intent.location : 'unknown'
-  const areaCoords = AREA_COORDS[searchArea] ?? AREA_COORDS['unknown']
+  
+  // Case-insensitive lookup for area coords
+  const areaKey = Object.keys(AREA_COORDS).find(k => k.toLowerCase() === searchArea.toLowerCase()) || 'unknown'
+  const areaCoords = AREA_COORDS[areaKey]
 
   // Map service name to service_type column
   const serviceTypeMap: Record<string, string> = {
-    'AC Repair': 'AC Technician',
-    'AC Service': 'AC Technician',
-    Electrician: 'Electrician',
-    Plumber: 'Plumber',
-    Mechanic: 'Mechanic',
-    Tutor: 'Tutor',
-    Beautician: 'Beautician',
-    Driver: 'Driver',
+    'ac repair': 'AC Technician',
+    'ac service': 'AC Technician',
+    electrician: 'Electrician',
+    plumber: 'Plumber',
+    mechanic: 'Mechanic',
+    tutor: 'Tutor',
+    beautician: 'Beautician',
+    driver: 'Driver',
   }
-  const serviceType = serviceTypeMap[intent.service] ?? intent.service
+  const normalizedIntentService = (intent.service || '').toLowerCase()
+  const serviceType = serviceTypeMap[normalizedIntentService] ?? intent.service
 
   const { data: providers, error } = await supabase
     .from('providers')
     .select('*')
-    .eq('service_type', serviceType)
+    .ilike('service_type', serviceType)
     .eq('status', 'active')
 
   let candidates: Provider[] = providers ?? []
   const fallbackUsed = !!error || candidates.length === 0
 
-  // Filter by travel radius from search area
+  // Filter by travel radius from search area, or exact area match if coords missing
   candidates = candidates.filter((p) => {
+    if (p.lat == null || p.lng == null) {
+      // If provider has no coordinates, include them if their area matches case-insensitively
+      return p.area && searchArea && p.area.toLowerCase() === searchArea.toLowerCase()
+    }
     const dist = haversineKm(areaCoords.lat, areaCoords.lng, p.lat, p.lng)
     return dist <= (p.travel_radius ?? 15)
   })
