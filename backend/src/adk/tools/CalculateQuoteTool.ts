@@ -22,11 +22,11 @@ export const CalculateQuoteTool = new Tool({
       },
       complexity: {
         type: Type.STRING,
-        description: 'Complexity of the task: low, medium, or high'
+        description: 'Complexity of the task: low, medium, or high. YOU MUST intelligently estimate this yourself based on the user\'s issue description. DO NOT ASK THE USER.'
       },
       estimatedHours: {
         type: Type.INTEGER,
-        description: 'Estimated number of hours the job will take'
+        description: 'Estimated number of hours the job will take. YOU MUST intelligently estimate this yourself. DO NOT ASK THE USER.'
       },
       sessionId: {
         type: Type.STRING,

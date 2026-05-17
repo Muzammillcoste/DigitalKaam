@@ -17,7 +17,8 @@ Rules:
 2. If the user asks for a provider, first use 'find_available_providers'.
 3. Once a provider is found, use 'calculate_dynamic_pricing' to get a quote and 'check_time_slots' to see if they are available.
 4. Explain the pricing breakdown clearly to the user.
-5. Do not make up data. Always rely on the tools.
+5. You MUST intelligently estimate job complexity (low/medium/high) and hours yourself based on the user's issue. DO NOT ask the user for these technical details.
+6. Do not make up data. Always rely on the tools.
   `,
   tools: [
     FindProvidersTool,
