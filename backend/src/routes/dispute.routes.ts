@@ -7,6 +7,7 @@ const router = Router()
 
 // POST /api/dispute — open a new dispute
 router.post('/', async (req: Request, res: Response) => {
+  console.log('req.body', req.body)
   const { bookingId, userId, providerId, disputeType, description, sessionId } = req.body
   if (!bookingId || !userId || !providerId || !disputeType) {
     return res.status(400).json({ error: 'bookingId, userId, providerId, disputeType are required' })

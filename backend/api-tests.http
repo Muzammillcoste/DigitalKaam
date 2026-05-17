@@ -51,8 +51,20 @@ Content-Type: application/json
 ### 3. BOOKINGS
 ### -----------------------------------------------------
 
-### List all bookings
+### List all bookings for user
 GET {{baseUrl}}/booking/user/<user-id>
+
+### Create a booking
+POST {{baseUrl}}/booking
+Content-Type: application/json
+
+{
+  "provider_id": "<provider-id-here>",
+  "user_id": "<user-id-here>",
+  "user_request": "Need my AC fixed urgently",
+  "status": "confirmed",
+  "price": 1500
+}
 
 ### -----------------------------------------------------
 ### 4. DISPUTES
@@ -61,12 +73,36 @@ GET {{baseUrl}}/booking/user/<user-id>
 ### List disputes for a user
 GET {{baseUrl}}/dispute/user/<user-id>
 
+### Create a dispute
+POST {{baseUrl}}/dispute
+Content-Type: application/json
+
+{
+  "bookingId": "<booking-id-here>",
+  "userId": "<user-id-here>",
+  "providerId": "<provider-id-here>",
+  "disputeType": "quality",
+  "description": "Provider did not fix the issue properly"
+}
+
 ### -----------------------------------------------------
 ### 5. AVAILABILITY
 ### -----------------------------------------------------
 
 ### Get availability for a provider
 GET {{baseUrl}}/availability?providerId=<provider-uuid>
+
+### Create availability slot
+POST {{baseUrl}}/availability
+Content-Type: application/json
+
+{
+  "provider_id": "<provider-id-here>",
+  "date": "2026-05-20",
+  "start_time": "10:00",
+  "end_time": "12:00",
+  "is_booked": false
+}
 
 ### -----------------------------------------------------
 ### 6. REPUTATION
@@ -75,16 +111,52 @@ GET {{baseUrl}}/availability?providerId=<provider-uuid>
 ### List reputation for a provider
 GET {{baseUrl}}/reputation?providerId=<provider-uuid>
 
+### Create reputation record
+POST {{baseUrl}}/reputation
+Content-Type: application/json
+
+{
+  "provider_id": "<provider-id-here>",
+  "positive_reviews": 10,
+  "negative_reviews": 1,
+  "complaints": 0,
+  "disputes": 0
+}
+
 ### -----------------------------------------------------
 ### 7. TRACES
 ### -----------------------------------------------------
 
-### List traces for a session
-GET {{baseUrl}}/traces?sessionId=<session-uuid>
+### List traces
+GET {{baseUrl}}/traces
+
+### Create a trace record
+POST {{baseUrl}}/traces
+Content-Type: application/json
+
+{
+  "session_id": "session-123",
+  "agent": "IntentAgent",
+  "input": {"text": "fix AC"},
+  "output": {"intent": "ac_repair"},
+  "confidence_score": 0.95
+}
 
 ### -----------------------------------------------------
 ### 8. FEEDBACK
 ### -----------------------------------------------------
 
-### List feedback for a provider
-GET {{baseUrl}}/feedback?providerId=<provider-uuid>
+### List feedback
+GET {{baseUrl}}/feedback
+
+### Create feedback
+POST {{baseUrl}}/feedback
+Content-Type: application/json
+
+{
+  "booking_id": "<booking-id-here>",
+  "user_id": "<user-id-here>",
+  "provider_id": "<provider-id-here>",
+  "rating": 5,
+  "review_text": "Great service!"
+}
