@@ -3,7 +3,9 @@ import dotenv from 'dotenv'
 import { v4 as uuidv4 } from 'uuid'
 dotenv.config()
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!)
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!, {
+  auth: { autoRefreshToken: false, persistSession: false }
+})
 
 const AREAS = ['Gulshan', 'DHA', 'Malir', 'Saddar', 'North Nazimabad', 'Clifton', 'Korangi']
 
@@ -129,6 +131,55 @@ function jitter(base: number, amount: number): number {
 async function seed() {
   console.log('🌱 Starting DigitalKaam seed...\n')
 
+  // ==========================================
+  // 1. SEED TEST USERS
+  // ==========================================
+  console.log('👤 Seeding Test Users...')
+  const testUsers = [
+    { email: 'user1@digitalkaam.com', password: 'Password123!', name: 'Ali Khan', area: 'Gulshan' },
+    { email: 'user2@digitalkaam.com', password: 'Password123!', name: 'Sara Ahmed', area: 'DHA' },
+    { email: 'user3@digitalkaam.com', password: 'Password123!', name: 'Bilal Malik', area: 'Clifton' }
+  ]
+
+  for (const user of testUsers) {
+    // Check if user already exists
+    const { data: existing } = await supabase.auth.admin.listUsers()
+    const existingUser = existing?.users.find(u => u.email === user.email)
+
+    let userId: string
+    if (existingUser) {
+      userId = existingUser.id
+      console.log(`⏭️  User ${user.email} already exists (${userId})`)
+    } else {
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: user.email,
+        password: user.password,
+        email_confirm: true,
+        user_metadata: { full_name: user.name }
+      })
+      if (authError) {
+        console.error(`❌ Failed to create ${user.email}:`, authError.message)
+        continue
+      }
+      userId = authData.user.id
+      console.log(`✅ Created auth user: ${user.email} (${userId})`)
+    }
+
+    // Upsert user_profile
+    const { error: profileError } = await supabase.from('user_profiles').upsert({
+      id: userId,
+      full_name: user.name,
+      email: user.email,
+      home_area: user.area,
+      phone: '+923001234567'
+    })
+    if (profileError) console.error(`❌ Profile upsert error for ${user.email}:`, profileError.message)
+  }
+
+  // ==========================================
+  // 2. SEED PROVIDERS
+  // ==========================================
+  console.log('\n👷 Seeding Providers...')
   const serviceTypes = Object.keys(SERVICE_PROFILES)
   const providers = []
   const availability = []
@@ -188,9 +239,9 @@ async function seed() {
         date.setDate(date.getDate() + dayOffset)
         const dateStr = date.toISOString().split('T')[0]
 
-        // Random 3–5 slots per day
+        // Generate 5–8 slots per day to ensure widespread availability
         const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
-        const shuffled = timeSlots.sort(() => Math.random() - 0.5).slice(0, randomInt(3, 5))
+        const shuffled = timeSlots.sort(() => Math.random() - 0.5).slice(0, randomInt(5, 8))
         shuffled.sort()
 
         for (const startTime of shuffled) {
@@ -202,7 +253,7 @@ async function seed() {
             date: dateStr,
             start_time: startTime,
             end_time: endTime,
-            is_booked: Math.random() < 0.25, // 25% already booked
+            is_booked: Math.random() < 0.1, // Only 10% booked to ensure mostly free slots
             travel_buffer: 30,
           })
         }

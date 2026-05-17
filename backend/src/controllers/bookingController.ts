@@ -62,6 +62,10 @@ export async function processBooking(
     session_id: sessionId,
   })
 
+  if (bookingError) {
+    console.error('🔥 Supabase Booking Insert Error:', bookingError)
+  }
+
   // Mark availability slot as booked
   if (scheduling.availabilityId) {
     await supabase

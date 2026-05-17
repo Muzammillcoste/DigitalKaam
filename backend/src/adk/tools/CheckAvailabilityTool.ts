@@ -12,9 +12,13 @@ export const CheckAvailabilityTool = new Tool({
         type: Type.STRING,
         description: 'The UUID of the service provider'
       },
+      requestedDate: {
+        type: Type.STRING,
+        description: 'The requested date in YYYY-MM-DD format. You must deduce this from user input (e.g. tomorrow = tomorrow\'s date).'
+      },
       requestedTime: {
         type: Type.STRING,
-        description: 'The requested time (e.g., "Tomorrow Morning", "ASAP", or a specific ISO date)'
+        description: 'The requested time in strict 24-hour HH:mm format (e.g., 10:00, 14:00). Deduce from user input ("morning" = 10:00, "ASAP" = next hour).'
       },
       estimatedHours: {
         type: Type.INTEGER,
@@ -25,13 +29,13 @@ export const CheckAvailabilityTool = new Tool({
         description: 'Session ID for tracing'
       }
     },
-    required: ['providerId', 'requestedTime', 'estimatedHours']
+    required: ['providerId', 'requestedDate', 'requestedTime', 'estimatedHours']
   },
   execute: async (args: any) => {
     try {
       const result = await processScheduling(
         { id: args.providerId } as any, // Mock provider
-        new Date().toISOString().split('T')[0], // Mock date
+        args.requestedDate,
         args.requestedTime,
         args.estimatedHours,
         args.sessionId || 'adk-session'

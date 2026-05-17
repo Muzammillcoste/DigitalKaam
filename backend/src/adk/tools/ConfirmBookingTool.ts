@@ -1,5 +1,6 @@
 import { Tool } from '../Tool'
 import { processBooking } from '../../controllers/bookingController'
+import { v4 as uuidv4 } from 'uuid'
 import { Type } from '@google/genai'
 
 export const ConfirmBookingTool = new Tool({
@@ -24,21 +25,29 @@ export const ConfirmBookingTool = new Tool({
         type: Type.INTEGER,
         description: 'The final agreed price'
       },
+      requestedDate: {
+        type: Type.STRING,
+        description: 'The agreed date in YYYY-MM-DD format'
+      },
+      requestedTime: {
+        type: Type.STRING,
+        description: 'The agreed time in HH:mm format'
+      },
       sessionId: {
         type: Type.STRING,
         description: 'Session ID for tracing'
       }
     },
-    required: ['providerId', 'userId', 'userRequest', 'finalPrice']
+    required: ['providerId', 'userId', 'userRequest', 'finalPrice', 'requestedDate', 'requestedTime']
   },
   execute: async (args: any) => {
     try {
       const result = await processBooking(
-        args.userId,
+        args.userId, // Real authenticated user ID injected securely from JWT session
         { id: args.providerId } as any, // Mock provider
         { total: args.finalPrice, currency: 'PKR', breakdown: {} } as any, // Mock pricing
-        { slot: 'ASAP', startTime: new Date().toISOString(), endTime: new Date(Date.now() + 3600000).toISOString() } as any, // Mock scheduling
-        {} as any, // Mock complexity
+        { slot: args.requestedTime, date: args.requestedDate, startTime: args.requestedTime, endTime: args.requestedTime } as any, // Mock scheduling
+        { complexity: 'medium' } as any, // Mock complexity
         args.userRequest || 'ADK Booking', // userRequest
         'unknown', // location
         args.sessionId || 'adk-session'

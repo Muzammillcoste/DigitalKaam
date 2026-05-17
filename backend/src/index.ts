@@ -13,6 +13,7 @@ import reputationRoutes from './routes/reputation.routes'
 import tracesRoutes from './routes/traces.routes'
 import feedbackRoutes from './routes/feedback.routes'
 import chatRoutes from './routes/chat.routes'
+import authRoutes from './routes/auth.routes'
 
 const app = express()
 const PORT = process.env.PORT ?? 3000
@@ -36,6 +37,7 @@ app.use('/api/reputation', reputationRoutes)
 app.use('/api/traces', tracesRoutes)
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/chat', chatRoutes)
+app.use('/api/auth', authRoutes)
 
 app.listen(PORT, () => {
   console.log(`\n🚀 DigitalKaam Antigravity API running on http://localhost:${PORT}`)
