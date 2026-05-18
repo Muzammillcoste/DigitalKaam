@@ -69,15 +69,22 @@ export async function processMatching(
 
   const areaCoords = AREA_COORDS[discovery.normalizedSearchArea] ?? AREA_COORDS[intent.location] ?? AREA_COORDS['unknown']
 
+  console.log(`[MatchingController] Starting match for ${candidates.length} candidates. Date: ${requestedDate}, Time: ${requestedTime}`)
+
   // Get availability for requested date
-  const { data: availabilityRecords } = await supabase
+  const { data: availabilityRecords, error: availabilityError } = await supabase
     .from('availability')
     .select('*')
     .eq('date', requestedDate)
     .eq('is_booked', false)
     .in('provider_id', candidates.map((c) => c.id))
 
+  if (availabilityError) {
+    console.log(`[MatchingController] Availability DB error:`, availabilityError)
+  }
+  
   const availableProviderIds = new Set((availabilityRecords ?? []).map((a: any) => a.provider_id))
+  console.log(`[MatchingController] Availability records found for date ${requestedDate}:`, availabilityRecords?.length || 0)
 
   // Compute stats for normalization
   const maxRate = Math.max(...candidates.map((p) => p.hourly_rate))

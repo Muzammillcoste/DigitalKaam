@@ -118,6 +118,11 @@ export async function processDiscovery(
     .map((s) => `service_type.ilike.%${s.replace(/[%_]/g, '').trim()}%`)
     .join(',')
 
+  console.log(`[DiscoveryController] Input intent:`, intent)
+  console.log(`[DiscoveryController] Canonicalized area: ${normalizedSearchArea} (coords: ${JSON.stringify(areaCoords)})`)
+  console.log(`[DiscoveryController] Service candidates:`, serviceCandidates)
+  console.log(`[DiscoveryController] DB query condition (OR):`, serviceLikeQuery)
+
   let query = supabase
     .from('providers')
     .select('*')
@@ -132,6 +137,9 @@ export async function processDiscovery(
   let candidates: Provider[] = providers ?? []
   const fallbackUsed = !!error || candidates.length === 0
 
+  console.log(`[DiscoveryController] Raw candidates from DB: ${candidates.length}`)
+  if (error) console.log(`[DiscoveryController] DB error:`, error)
+
   // Filter by travel radius from search area, or exact area match if coords missing
   candidates = candidates.filter((p) => {
     if (normalizedSearchArea === 'unknown') {
@@ -140,12 +148,18 @@ export async function processDiscovery(
 
     if (p.lat == null || p.lng == null) {
       // If provider has no coordinates, include them if their area matches case-insensitively
-      return p.area && p.area.toLowerCase() === normalizedSearchArea.toLowerCase()
+      const match = p.area && p.area.toLowerCase() === normalizedSearchArea.toLowerCase()
+      if (!match) console.log(`[DiscoveryController] Dropped ${p.name}: No coords and area '${p.area}' != '${normalizedSearchArea}'`)
+      return match
     }
 
     const dist = haversineKm(areaCoords.lat, areaCoords.lng, p.lat, p.lng)
-    return dist <= (p.travel_radius ?? 15)
+    const inRadius = dist <= (p.travel_radius ?? 15)
+    if (!inRadius) console.log(`[DiscoveryController] Dropped ${p.name}: Distance ${dist.toFixed(2)}km > radius ${p.travel_radius ?? 15}km`)
+    return inRadius
   })
+  
+  console.log(`[DiscoveryController] Candidates after radius filter: ${candidates.length}`)
 
   // Filter by complexity — complex jobs need certified providers
   if (complexity.complexity === 'complex' && complexity.requiredCertifications.length > 0) {
