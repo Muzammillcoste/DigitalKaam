@@ -81,26 +81,114 @@ function canonicalizeArea(area: string): string {
   return exactKey ?? 'unknown'
 }
 
+// Bidirectional alias map: any user/Gemini variation → exact DB service_type value
+// Add new aliases here as new variants are discovered in production logs.
+const SERVICE_ALIAS_MAP: Record<string, string> = {
+  // ── AC Technician ─────────────────────────────────────────────────────────
+  'ac technician':          'AC Technician',
+  'ac tech':                'AC Technician',
+  'ac repair':              'AC Technician',
+  'ac service':             'AC Technician',
+  'ac mechanic':            'AC Technician',
+  'ac wala':                'AC Technician',
+  'ac':                     'AC Technician',
+  'air conditioner':        'AC Technician',
+  'air conditioner repair': 'AC Technician',
+  'air conditioning':       'AC Technician',
+  'cooling':                'AC Technician',
+  'hvac':                   'AC Technician',
+  'ac installation':        'AC Technician',
+  'ac gas':                 'AC Technician',
+  'ac cleaning':            'AC Technician',
+  'inverter ac':            'AC Technician',
+  'split ac':               'AC Technician',
+  'ac technicians':         'AC Technician',
+  // ── Electrician ───────────────────────────────────────────────────────────
+  'electrician':            'Electrician',
+  'electricians':           'Electrician',
+  'electric':               'Electrician',
+  'electrical':             'Electrician',
+  'bijli':                  'Electrician',
+  'bijli wala':             'Electrician',
+  'bijliwala':              'Electrician',
+  'wiring':                 'Electrician',
+  'fan repair':             'Electrician',
+  'light repair':           'Electrician',
+  'socket repair':          'Electrician',
+  'short circuit':          'Electrician',
+  'solar':                  'Electrician',
+  // ── Plumber ───────────────────────────────────────────────────────────────
+  'plumber':                'Plumber',
+  'plumbers':               'Plumber',
+  'plumbing':               'Plumber',
+  'pipe':                   'Plumber',
+  'pipe repair':            'Plumber',
+  'pani':                   'Plumber',
+  'pani wala':              'Plumber',
+  'leak':                   'Plumber',
+  'leak repair':            'Plumber',
+  'drain':                  'Plumber',
+  'drain cleaning':         'Plumber',
+  'tap':                    'Plumber',
+  'water tank':             'Plumber',
+  'water pump':             'Plumber',
+  // ── Mechanic (car, NOT AC) ─────────────────────────────────────────────────
+  'mechanic':               'Mechanic',
+  'mechanics':              'Mechanic',
+  'car mechanic':           'Mechanic',
+  'car repair':             'Mechanic',
+  'auto':                   'Mechanic',
+  'auto mechanic':          'Mechanic',
+  'vehicle repair':         'Mechanic',
+  'motorcycle repair':      'Mechanic',
+  'bike repair':            'Mechanic',
+  'gaari':                  'Mechanic',
+  'gaari wala':             'Mechanic',
+  'engine repair':          'Mechanic',
+  // ── Tutor ─────────────────────────────────────────────────────────────────
+  'tutor':                  'Tutor',
+  'tutors':                 'Tutor',
+  'teacher':                'Tutor',
+  'ustaad':                 'Tutor',
+  'tuition':                'Tutor',
+  'home tuition':           'Tutor',
+  'teaching':               'Tutor',
+  // ── Beautician ────────────────────────────────────────────────────────────
+  'beautician':             'Beautician',
+  'beauty':                 'Beautician',
+  'parlour':                'Beautician',
+  'salon':                  'Beautician',
+  'makeup':                 'Beautician',
+  'mehndi':                 'Beautician',
+  'hair stylist':           'Beautician',
+  'bridal makeup':          'Beautician',
+  // ── Driver ────────────────────────────────────────────────────────────────
+  'driver':                 'Driver',
+  'drivers':                'Driver',
+  'chauffeur':              'Driver',
+  'driving':                'Driver',
+}
+
 function serviceTypeCandidates(rawService: string): string[] {
   const normalized = (rawService || '').toLowerCase().trim()
-  const serviceMap: Record<string, string[]> = {
-    'ac repair': ['AC Technician', 'AC tech', 'ac technician'],
-    'ac service': ['AC Technician', 'AC tech', 'ac technician'],
-    ac: ['AC Technician', 'AC tech', 'ac technician'],
-    electrician: ['Electrician', 'electrician', 'electrical'],
-    electricians: ['Electrician', 'electrician', 'electrical'],
-    electric: ['Electrician', 'electrician', 'electrical'],
-    plumber: ['Plumber', 'plumber', 'plumbing'],
-    plumbers: ['Plumber', 'plumber', 'plumbing'],
-    mechanic: ['Mechanic', 'mechanic'],
-    mechanics: ['Mechanic', 'mechanic'],
-    tutor: ['Tutor', 'tutor'],
-    beautician: ['Beautician', 'beautician'],
-    driver: ['Driver', 'driver'],
+
+  // 1. Direct alias lookup (exact match on normalized input)
+  if (normalized in SERVICE_ALIAS_MAP) {
+    return [SERVICE_ALIAS_MAP[normalized]]
   }
 
-  if (normalized in serviceMap) return serviceMap[normalized]
-  if (!normalized) return []
+  // 2. Partial match — check if any alias is a substring of the input or vice versa
+  //    Longest alias wins to avoid false matches (e.g. "ac" matching "car mechanic via 'ac'")
+  const matches = Object.entries(SERVICE_ALIAS_MAP)
+    .filter(([alias]) => normalized.includes(alias) || alias.includes(normalized))
+    .sort((a, b) => b[0].length - a[0].length) // longest alias = most specific
+
+  if (matches.length > 0) {
+    return [matches[0][1]] // return the canonical DB value
+  }
+
+  // 3. No match: return raw input for a broad ILIKE fallback
+  console.warn(`[DiscoveryController] ⚠ No alias match for service='${rawService}'. Add to SERVICE_ALIAS_MAP if this is a valid service.`)
   return [rawService, normalized]
 }
 
