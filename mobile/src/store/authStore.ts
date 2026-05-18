@@ -10,31 +10,56 @@ export interface UserProfile {
   push_token?: string;
 }
 
+export interface ProviderProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string;
+  email: string;
+  service_type: string;
+  specialization: string;
+  experience_years: number;
+  rating: number;
+  hourly_rate: number;
+  area: string;
+  status: 'active' | 'inactive';
+}
+
 interface AuthState {
   userId: string | null;
   token: string | null;
   profile: UserProfile | null;
+  providerProfile: ProviderProfile | null;
+  isProviderMode: boolean;
   isReady: boolean;
 
   setSession: (userId: string, token: string) => void;
   setProfile: (profile: UserProfile) => void;
+  setProviderProfile: (profile: ProviderProfile | null) => void;
+  toggleProviderMode: () => void;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   userId: null,
   token: null,
   profile: null,
+  providerProfile: null,
+  isProviderMode: false,
   isReady: false,
 
   setSession: (userId, token) => set({ userId, token }),
 
   setProfile: (profile) => set({ profile }),
 
+  setProviderProfile: (providerProfile) => set({ providerProfile }),
+
+  toggleProviderMode: () => set((state) => ({ isProviderMode: !state.isProviderMode })),
+
   logout: async () => {
     await supabase.auth.signOut();
-    set({ userId: null, token: null, profile: null });
+    set({ userId: null, token: null, profile: null, providerProfile: null, isProviderMode: false });
   },
 
   initialize: async () => {
@@ -53,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (session) {
         set({ userId: session.user.id, token: session.access_token });
       } else {
-        set({ userId: null, token: null, profile: null });
+        set({ userId: null, token: null, profile: null, providerProfile: null, isProviderMode: false });
       }
     });
   },

@@ -34,6 +34,9 @@ export type BookingsStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
+  BecomeProfile: undefined;
+  ProviderDashboard: undefined;
+  ProviderJobDetail: { bookingId: string };
 };
 
 // ── Typed screen props helpers ────────────────────────────────

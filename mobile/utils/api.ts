@@ -78,6 +78,7 @@ export const api = {
   booking: {
     get: (bookingId: string) => get(`/api/booking/${bookingId}`),
     listByUser: (userId: string) => get<any[]>(`/api/booking/user/${userId}`),
+    listByProvider: (providerId: string) => get<any[]>(`/api/booking/provider/${providerId}`),
     updateStatus: (
       bookingId: string,
       status: string,
@@ -117,6 +118,27 @@ export const api = {
       return get<any[]>(`/api/provider?${params.toString()}`);
     },
     get: (providerId: string) => get(`/api/provider/${providerId}`),
+    getByUserId: (userId: string) => get<any>(`/api/provider/user/${userId}`),
+    create: (body: {
+      user_id: string;
+      name: string;
+      phone: string;
+      email: string;
+      service_type: string;
+      specialization: string;
+      experience_years: number;
+      hourly_rate: number;
+      area: string;
+      skills?: string[];
+    }) => post<any>('/api/provider', body),
+    update: (providerId: string, body: Partial<{
+      specialization: string;
+      experience_years: number;
+      hourly_rate: number;
+      area: string;
+      status: 'active' | 'inactive';
+      skills: string[];
+    }>) => patch<any>(`/api/provider/${providerId}`, body),
     availability: (providerId: string, date?: string) =>
       get(`/api/provider/${providerId}/availability${date ? `?date=${date}` : ''}`),
     traces: (sessionId: string) => get(`/api/provider/traces/${sessionId}`),

@@ -14,7 +14,7 @@ import {
 import { api } from './utils/api';
 
 export default function App() {
-  const { initialize, userId, setProfile } = useAuthStore();
+  const { initialize, userId, setProfile, setProviderProfile } = useAuthStore();
   const { showToast } = useUIStore();
 
   useEffect(() => {
@@ -26,6 +26,12 @@ export default function App() {
 
     api.users.getProfile(userId)
       .then((p: any) => setProfile(p))
+      .catch(() => {});
+
+    api.provider.getByUserId(userId)
+      .then((p: any) => {
+        if (p) setProviderProfile(p);
+      })
       .catch(() => {});
 
     registerForPushNotifications().then((token) => {

@@ -10,7 +10,7 @@ const router = Router()
 router.get('/:bookingId', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select('*, providers(name, phone, service_type, area, rating)')
+    .select('*, providers(name, phone, service_type, area, rating), user_profiles(full_name, phone, home_area)')
     .eq('id', req.params.bookingId)
     .single()
   if (error) return res.status(404).json({ error: 'Booking not found' })
@@ -23,6 +23,17 @@ router.get('/user/:userId', async (req: Request, res: Response) => {
     .from('bookings')
     .select('*, providers(name, service_type, rating)')
     .eq('user_id', req.params.userId)
+    .order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json(data)
+})
+
+// GET /api/booking/provider/:providerId — all bookings for a provider
+router.get('/provider/:providerId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, user_profiles(full_name, phone, home_area)')
+    .eq('provider_id', req.params.providerId)
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
   return res.json(data)

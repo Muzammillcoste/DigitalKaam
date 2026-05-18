@@ -26,7 +26,7 @@ interface MenuItem {
 
 export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
   const insets = useSafeAreaInsets();
-  const { userId, profile, setProfile, logout } = useAuthStore();
+  const { userId, profile, setProfile, logout, providerProfile, isProviderMode, toggleProviderMode } = useAuthStore();
   const { showToast } = useUIStore();
 
   useEffect(() => {
@@ -48,6 +48,24 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
       label: 'Edit Profile',
       onPress: () => navigation.navigate('EditProfile'),
     },
+    ...(providerProfile
+      ? [
+          {
+            icon: 'swap-horizontal-outline' as const,
+            label: isProviderMode ? 'Switch to Customer Mode' : 'Switch to Provider Mode',
+            onPress: () => {
+              toggleProviderMode();
+              showToast(isProviderMode ? 'Switched to Customer Mode' : 'Switched to Provider Mode', 'success');
+            },
+          },
+        ]
+      : [
+          {
+            icon: 'briefcase-outline' as const,
+            label: 'Become a Provider',
+            onPress: () => navigation.navigate('BecomeProfile' as any),
+          },
+        ]),
     {
       icon: 'notifications-outline',
       label: 'Notifications',

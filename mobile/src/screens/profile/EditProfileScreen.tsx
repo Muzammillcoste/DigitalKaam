@@ -11,7 +11,7 @@ import type { ProfileScreenProps } from '@/navigation/types';
 
 export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfile'>) {
   const insets = useSafeAreaInsets();
-  const { userId, profile, setProfile } = useAuthStore();
+  const { userId, profile, setProfile, providerProfile, setProviderProfile } = useAuthStore();
   const { showToast } = useUIStore();
 
   const [form, setForm] = useState({
@@ -38,6 +38,18 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
         home_area: form.home_area.trim() || undefined,
       });
       setProfile({ ...profile!, ...form });
+
+      if (providerProfile) {
+        try {
+          const updatedProv = await api.provider.update(providerProfile.id, {
+            name: form.full_name.trim(),
+          } as any);
+          setProviderProfile(updatedProv);
+        } catch (err) {
+          console.error('Failed to sync provider name:', err);
+        }
+      }
+
       showToast('Profile updated!', 'success');
       navigation.goBack();
     } catch {

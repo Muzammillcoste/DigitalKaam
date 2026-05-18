@@ -21,6 +21,15 @@ const PORT = process.env.PORT ?? 3000
 app.use(cors())
 app.use(express.json())
 
+// Global Request Logger
+app.use((req, res, next) => {
+  console.log(`\n📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('   Body:', JSON.stringify(req.body));
+  }
+  next();
+})
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'DigitalKaam Antigravity API', timestamp: new Date().toISOString() })

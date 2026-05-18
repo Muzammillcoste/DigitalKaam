@@ -25,6 +25,17 @@ router.get('/:providerId', async (req: Request, res: Response) => {
   return res.json(data)
 })
 
+// GET /api/provider/user/:userId — fetch provider profile by user ID
+router.get('/user/:userId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from('providers')
+    .select('*, reputation(*)')
+    .eq('user_id', req.params.userId)
+    .maybeSingle()
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json(data)
+})
+
 // POST /api/provider
 router.post('/', async (req: Request, res: Response) => {
   const { data, error } = await supabase.from('providers').insert([req.body]).select().single();
