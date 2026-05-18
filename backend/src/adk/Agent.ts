@@ -12,17 +12,26 @@ export interface AgentConfig {
 export class Agent {
   public name: string
   public instructions: string
+  /** Immutable base — stored so instructions can be refreshed each turn without losing base content. */
+  public baseInstructions: string
   public tools: Tool[]
   public model: string
   public memory: Memory
+  /**
+   * Key/value pairs merged into EVERY tool call args by the server.
+   * Used to inject sessionId and userId so the LLM cannot accidentally omit them.
+   */
+  public sessionMetadata: Record<string, any>
   private ai: GoogleGenAI
 
   constructor(config: AgentConfig) {
     this.name = config.name
     this.instructions = config.instructions
+    this.baseInstructions = config.instructions
     this.tools = config.tools || []
     this.model = config.model || 'gemini-2.5-flash'
     this.memory = new Memory()
+    this.sessionMetadata = {}
     
     // Initialize SDK
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
@@ -64,8 +73,11 @@ export class Agent {
              throw new Error(`Tool ${call.name} not found`)
           }
           
-          console.log(`[Agent: ${this.name}] Executing Tool: ${call.name}`, call.args)
-          const toolResult = await tool.execute(call.args)
+          // Merge server-side session metadata (sessionId, userId) into args.
+          // This guarantees tools always receive them regardless of LLM behaviour.
+          const mergedArgs = { ...call.args, ...this.sessionMetadata }
+          console.log(`[Agent: ${this.name}] Executing Tool: ${call.name}`, mergedArgs)
+          const toolResult = await tool.execute(mergedArgs)
           
           // Append function call and result to memory
           this.memory.addFunctionCallAndResponse(

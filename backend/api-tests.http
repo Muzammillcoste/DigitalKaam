@@ -1,10 +1,39 @@
-### DigitalKaam CRUD API Tests
+### DigitalKaam API Tests
 # Make sure to run `npm run dev` in the backend folder first.
 
 @baseUrl = http://127.0.0.1:3000/api
 
 ### Health Check
 GET http://127.0.0.1:3000/health
+
+### -----------------------------------------------------
+### AUTH — Step 1: Login to get JWT access_token
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user1@digitalkaam.com",
+  "password": "Password123!"
+}
+
+### Step 2: Chat with AI (replace YOUR_TOKEN with access_token from login)
+# @name chatRequest
+POST {{baseUrl}}/chat
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "sessionId": "session-abc-001",
+  "message": "I need an electrician in Gulshan"
+}
+
+### Step 3: View full message history for a session
+GET {{baseUrl}}/chat/history?sessionId=session-abc-001
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### View all past sessions for this user
+GET {{baseUrl}}/chat/history
+Authorization: Bearer YOUR_TOKEN_HERE
 
 ### -----------------------------------------------------
 ### CHAT WITH AI ORCHESTRATOR

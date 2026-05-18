@@ -1,5 +1,6 @@
 import { Tool } from '../Tool'
 import { processBooking } from '../../controllers/bookingController'
+import { supabase } from '../../lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 import { Type } from '@google/genai'
 
@@ -42,16 +43,77 @@ export const ConfirmBookingTool = new Tool({
   },
   execute: async (args: any) => {
     try {
+      const sessionId = args.sessionId || 'adk-session'
+
+      // ── SESSION-LEVEL BOOKING GUARD ──────────────────────────────────────────
+      // Block ANY second booking within the same session, regardless of provider or time.
+      // Prevents double-booking caused by:
+      //   - LLM re-confirming after a generic acknowledgement ("صحیح ہے", "ok", "theek hai")
+      //   - Context loss after server restart
+      //   - Re-invocation 5–10 turns later when history window slides past the confirmation
+      // For a new service, the user must start a new chat session.
+      const { data: sessionBookings } = await supabase
+        .from('bookings')
+        .select('id, provider_id, scheduled_time, price, status')
+        .eq('session_id', sessionId)
+        .eq('status', 'confirmed')
+        .order('created_at', { ascending: true })
+
+      if (sessionBookings && sessionBookings.length > 0) {
+        const ids = sessionBookings.map((b: any) => b.id).join(', ')
+        console.log(`[ConfirmBookingTool] SESSION ALREADY BOOKED — Blocking duplicate. Existing ID(s): ${ids}`)
+        return {
+          success: false,
+          alreadyBooked: true,
+          existingBookings: sessionBookings.map((b: any) => ({
+            bookingId: b.id,
+            scheduledTime: b.scheduled_time,
+            price: b.price,
+          })),
+          message: `This session already has a confirmed booking. Booking ID: ${ids}. ` +
+            `Tell the user their existing booking ID and do NOT create a new booking. ` +
+            `If they need a different service, ask them to start a new conversation.`,
+        }
+      }
+
+      // ── PROCEED WITH NEW BOOKING ────────────────────────────────────────────
       const result = await processBooking(
-        args.userId, // Real authenticated user ID injected securely from JWT session
-        { id: args.providerId } as any, // Mock provider
-        { total: args.finalPrice, currency: 'PKR', breakdown: {} } as any, // Mock pricing
-        { slot: args.requestedTime, date: args.requestedDate, startTime: args.requestedTime, endTime: args.requestedTime } as any, // Mock scheduling
-        { complexity: 'medium' } as any, // Mock complexity
-        args.userRequest || 'ADK Booking', // userRequest
-        'unknown', // location
-        args.sessionId || 'adk-session'
+        args.userId,
+        { id: args.providerId } as any,
+        { total: args.finalPrice, currency: 'PKR', breakdown: {} } as any,
+        { slot: args.requestedTime, date: args.requestedDate, startTime: args.requestedTime, endTime: args.requestedTime } as any,
+        { complexity: 'medium' } as any,
+        args.userRequest || 'ADK Booking',
+        'unknown',
+        sessionId
       )
+
+      // ── TRACK BOOKING ID ON SESSION ─────────────────────────────────────────
+      // Append the new booking ID to the session's booking_ids array.
+      // This is the restart-proof source of truth.
+      if (result.bookingId) {
+        try {
+          // Fetch current booking_ids, then append
+          const { data: sessionData } = await supabase
+            .from('chat_sessions')
+            .select('booking_ids')
+            .eq('session_id', sessionId)
+            .single()
+
+          const currentIds: string[] = sessionData?.booking_ids || []
+          currentIds.push(result.bookingId)
+
+          await supabase
+            .from('chat_sessions')
+            .update({ booking_ids: currentIds })
+            .eq('session_id', sessionId)
+
+          console.log(`[ConfirmBookingTool] Tracked booking ${result.bookingId} on session ${sessionId}`)
+        } catch (trackError) {
+          console.error('[ConfirmBookingTool] Failed to track booking on session (non-fatal):', trackError)
+        }
+      }
+
       return { success: true, result }
     } catch (error: any) {
       return { success: false, error: error.message }

@@ -30,6 +30,7 @@ export interface DiscoveryOutput {
   candidates: Provider[]
   totalFound: number
   searchArea: string
+  normalizedSearchArea: string
   fallbackUsed: boolean
 }
 
@@ -57,46 +58,91 @@ const AREA_COORDS: Record<string, { lat: number; lng: number }> = {
   unknown: { lat: 24.8607, lng: 67.0105 }, // Karachi center
 }
 
+const AREA_ALIASES: Record<string, string> = {
+  gulshan: 'Gulshan',
+  'gulshan iqbal': 'Gulshan',
+  'gulshan e iqbal': 'Gulshan',
+  'gulshan-e-iqbal': 'Gulshan',
+  dha: 'DHA',
+  malir: 'Malir',
+  saddar: 'Saddar',
+  clifton: 'Clifton',
+  korangi: 'Korangi',
+  lyari: 'Lyari',
+  'north nazimabad': 'North Nazimabad',
+  nazimabad: 'North Nazimabad',
+}
+
+function canonicalizeArea(area: string): string {
+  if (!area) return 'unknown'
+  const cleaned = area.toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim()
+  if (cleaned in AREA_ALIASES) return AREA_ALIASES[cleaned]
+  const exactKey = Object.keys(AREA_COORDS).find((k) => k.toLowerCase() === cleaned)
+  return exactKey ?? 'unknown'
+}
+
+function serviceTypeCandidates(rawService: string): string[] {
+  const normalized = (rawService || '').toLowerCase().trim()
+  const serviceMap: Record<string, string[]> = {
+    'ac repair': ['AC Technician', 'AC tech', 'ac technician'],
+    'ac service': ['AC Technician', 'AC tech', 'ac technician'],
+    ac: ['AC Technician', 'AC tech', 'ac technician'],
+    electrician: ['Electrician', 'electrician', 'electrical'],
+    electricians: ['Electrician', 'electrician', 'electrical'],
+    electric: ['Electrician', 'electrician', 'electrical'],
+    plumber: ['Plumber', 'plumber', 'plumbing'],
+    plumbers: ['Plumber', 'plumber', 'plumbing'],
+    mechanic: ['Mechanic', 'mechanic'],
+    mechanics: ['Mechanic', 'mechanic'],
+    tutor: ['Tutor', 'tutor'],
+    beautician: ['Beautician', 'beautician'],
+    driver: ['Driver', 'driver'],
+  }
+
+  if (normalized in serviceMap) return serviceMap[normalized]
+  if (!normalized) return []
+  return [rawService, normalized]
+}
+
 export async function processDiscovery(
   intent: IntentOutput,
   complexity: ComplexityOutput,
   sessionId: string
 ): Promise<DiscoveryOutput> {
   const searchArea = intent.location !== 'unknown' ? intent.location : 'unknown'
-  
-  // Case-insensitive lookup for area coords
-  const areaKey = Object.keys(AREA_COORDS).find(k => k.toLowerCase() === searchArea.toLowerCase()) || 'unknown'
-  const areaCoords = AREA_COORDS[areaKey]
+  const normalizedSearchArea = canonicalizeArea(searchArea)
+  const areaCoords = AREA_COORDS[normalizedSearchArea]
 
-  // Map service name to service_type column
-  const serviceTypeMap: Record<string, string> = {
-    'ac repair': 'AC Technician',
-    'ac service': 'AC Technician',
-    electrician: 'Electrician',
-    plumber: 'Plumber',
-    mechanic: 'Mechanic',
-    tutor: 'Tutor',
-    beautician: 'Beautician',
-    driver: 'Driver',
-  }
-  const normalizedIntentService = (intent.service || '').toLowerCase()
-  const serviceType = serviceTypeMap[normalizedIntentService] ?? intent.service
+  const serviceCandidates = serviceTypeCandidates(intent.service)
+  const serviceLikeQuery = serviceCandidates
+    .map((s) => `service_type.ilike.%${s.replace(/[%_]/g, '').trim()}%`)
+    .join(',')
 
-  const { data: providers, error } = await supabase
+  let query = supabase
     .from('providers')
     .select('*')
-    .ilike('service_type', serviceType)
     .eq('status', 'active')
+
+  if (serviceLikeQuery.length > 0) {
+    query = query.or(serviceLikeQuery)
+  }
+
+  const { data: providers, error } = await query
 
   let candidates: Provider[] = providers ?? []
   const fallbackUsed = !!error || candidates.length === 0
 
   // Filter by travel radius from search area, or exact area match if coords missing
   candidates = candidates.filter((p) => {
+    if (normalizedSearchArea === 'unknown') {
+      return true
+    }
+
     if (p.lat == null || p.lng == null) {
       // If provider has no coordinates, include them if their area matches case-insensitively
-      return p.area && searchArea && p.area.toLowerCase() === searchArea.toLowerCase()
+      return p.area && p.area.toLowerCase() === normalizedSearchArea.toLowerCase()
     }
+
     const dist = haversineKm(areaCoords.lat, areaCoords.lng, p.lat, p.lng)
     return dist <= (p.travel_radius ?? 15)
   })
@@ -114,12 +160,12 @@ export async function processDiscovery(
   await supabase.from('traces').insert({
     session_id: sessionId,
     agent: 'DiscoveryAgent',
-    input: { serviceType, searchArea, complexity: complexity.complexity },
+    input: { service: intent.service, serviceCandidates, searchArea, normalizedSearchArea, complexity: complexity.complexity },
     output: { totalFound: candidates.length, fallbackUsed },
-    reasoning: `Found ${candidates.length} providers for "${serviceType}" near ${searchArea}. Fallback used: ${fallbackUsed}. Complexity filter: ${complexity.complexity}.`,
+    reasoning: `Found ${candidates.length} providers for "${intent.service}" near ${normalizedSearchArea} (raw: ${searchArea}). Fallback used: ${fallbackUsed}. Complexity filter: ${complexity.complexity}.`,
     tool_calls: { tool: 'SupabaseDB', table: 'providers', fallbackUsed },
     confidence_score: fallbackUsed ? 0.6 : 0.95,
   })
 
-  return { candidates, totalFound: candidates.length, searchArea, fallbackUsed }
+  return { candidates, totalFound: candidates.length, searchArea, normalizedSearchArea, fallbackUsed }
 }

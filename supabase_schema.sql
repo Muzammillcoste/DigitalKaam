@@ -129,3 +129,27 @@ ALTER TABLE public.reputation DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.traces DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.disputes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback DISABLE ROW LEVEL SECURITY;
+
+-- 9. Chat Messages table (persistent conversation history)
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON public.chat_messages(session_id, created_at);
+
+-- 10. Chat Sessions table (rolling summary + metadata)
+CREATE TABLE IF NOT EXISTS public.chat_sessions (
+    session_id TEXT PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    summary TEXT DEFAULT '',
+    turn_count INTEGER DEFAULT 0,
+    booking_ids UUID[] DEFAULT '{}',
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.chat_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_sessions DISABLE ROW LEVEL SECURITY;

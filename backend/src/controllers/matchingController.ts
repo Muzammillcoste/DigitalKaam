@@ -67,7 +67,7 @@ export async function processMatching(
     return { ranked: [], topProvider: null, reasoning: 'No providers available in this area.', noProvidersAvailable: true }
   }
 
-  const areaCoords = AREA_COORDS[intent.location] ?? AREA_COORDS['unknown']
+  const areaCoords = AREA_COORDS[discovery.normalizedSearchArea] ?? AREA_COORDS[intent.location] ?? AREA_COORDS['unknown']
 
   // Get availability for requested date
   const { data: availabilityRecords } = await supabase
