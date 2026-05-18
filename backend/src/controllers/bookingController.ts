@@ -7,6 +7,7 @@ import { ComplexityOutput } from './complexityController'
 
 export interface BookingOutput {
   bookingId: string
+  bookingRef: string
   status: string
   receipt: Receipt
   providerNotified: boolean
@@ -15,6 +16,7 @@ export interface BookingOutput {
 
 export interface Receipt {
   bookingId: string
+  bookingRef: string
   providerName: string
   providerPhone: string
   service: string
@@ -36,6 +38,19 @@ export interface Receipt {
   createdAt: string
 }
 
+// Generates a short human-friendly booking reference, e.g. DK-260518-K7M2
+// Excludes visually ambiguous chars (0/O, 1/I) to reduce support confusion.
+function generateBookingRef(): string {
+  const now = new Date()
+  const yy = String(now.getFullYear()).slice(2)
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let suffix = ''
+  for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)]
+  return `DK-${yy}${mm}${dd}-${suffix}`
+}
+
 export async function processBooking(
   userId: string,
   provider: RankedProvider,
@@ -47,10 +62,11 @@ export async function processBooking(
   sessionId: string
 ): Promise<BookingOutput> {
   const bookingId = uuidv4()
+  const bookingRef = generateBookingRef()
   const now = new Date().toISOString()
 
   console.log(`\n[BookingController] ── Creating booking ──`)
-  console.log(`  bookingId: ${bookingId}`)
+  console.log(`  bookingId: ${bookingId} | ref: ${bookingRef}`)
   console.log(`  provider: ${provider.name} (${provider.id})`)
   console.log(`  user: ${userId}`)
   console.log(`  scheduledTime: ${scheduling.date}T${scheduling.startTime}:00`)
@@ -60,6 +76,7 @@ export async function processBooking(
   // Insert booking record
   const { error: bookingError } = await supabase.from('bookings').insert({
     id: bookingId,
+    booking_ref: bookingRef,
     provider_id: provider.id,
     user_id: userId,
     user_request: userRequest,
@@ -103,6 +120,7 @@ export async function processBooking(
   // Build receipt
   const receipt: Receipt = {
     bookingId,
+    bookingRef,
     providerName: provider.name,
     providerPhone: provider.phone,
     service: provider.service_type,
@@ -131,6 +149,7 @@ export async function processBooking(
 
   return {
     bookingId,
+    bookingRef,
     status: bookingError ? 'failed' : 'confirmed',
     receipt,
     providerNotified: notifyProvider,

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.availability (
 -- 4. Create bookings table
 CREATE TABLE IF NOT EXISTS public.bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_ref TEXT UNIQUE,
     provider_id UUID NOT NULL REFERENCES public.providers(id),
     user_id UUID NOT NULL REFERENCES public.user_profiles(id),
     user_request TEXT,
