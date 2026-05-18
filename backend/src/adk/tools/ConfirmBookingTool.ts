@@ -45,7 +45,15 @@ export const ConfirmBookingTool = new Tool({
     try {
       const sessionId = args.sessionId || 'adk-session'
 
-      // ── SESSION-LEVEL BOOKING GUARD ──────────────────────────────────────────
+      console.log(`[ConfirmBookingTool] Checking session guard for session: ${sessionId}`)
+
+      console.log(`\n[ConfirmBookingTool] ── Booking request received ──`)
+      console.log(`  sessionId: ${sessionId}`)
+      console.log(`  providerId: ${args.providerId}`)
+      console.log(`  userId: ${args.userId}`)
+      console.log(`  finalPrice: PKR ${args.finalPrice}`)
+      console.log(`  date: ${args.requestedDate} at ${args.requestedTime}`)
+      console.log(`  userRequest: "${args.userRequest}"`)
       // Block ANY second booking within the same session, regardless of provider or time.
       // Prevents double-booking caused by:
       //   - LLM re-confirming after a generic acknowledgement ("صحیح ہے", "ok", "theek hai")
@@ -76,15 +84,57 @@ export const ConfirmBookingTool = new Tool({
         }
       }
 
-      // ── PROCEED WITH NEW BOOKING ────────────────────────────────────────────
+      // ── PROCEED WITH NEW BOOKING ──────────────────────────────────────────
+      console.log(`[ConfirmBookingTool] Session guard passed - proceeding with new booking`)
+
+      // Fetch real provider data so the receipt has correct name/phone/service_type.
+      // Previously this passed a mock { id } which caused null values in the receipt.
+      const { data: realProvider, error: providerErr } = await supabase
+        .from('providers')
+        .select('id, name, phone, service_type, hourly_rate, area, lat, lng')
+        .eq('id', args.providerId)
+        .single()
+
+      if (providerErr || !realProvider) {
+        console.log(`[ConfirmBookingTool] Provider ${args.providerId} not found:`, providerErr?.message)
+        return { success: false, error: `Provider not found: ${args.providerId}` }
+      }
+      console.log(`[ConfirmBookingTool] Fetched provider: ${realProvider.name} (${realProvider.service_type})`)
+
+      // Calculate a sensible endTime — default 2h window, capped at 23:00
+      const startHour = parseInt((args.requestedTime || '10:00').split(':')[0])
+      const endHour = Math.min(23, startHour + 2)
+      const endTime = `${String(endHour).padStart(2, '0')}:00`
+
       const result = await processBooking(
         args.userId,
-        { id: args.providerId } as any,
-        { total: args.finalPrice, currency: 'PKR', breakdown: {} } as any,
-        { slot: args.requestedTime, date: args.requestedDate, startTime: args.requestedTime, endTime: args.requestedTime } as any,
-        { complexity: 'medium' } as any,
+        { ...realProvider, matchScore: 1, distanceKm: 0, scoreBreakdown: {}, selectionReason: '', isAvailable: true } as any,
+        {
+          total: args.finalPrice,
+          currency: 'PKR',
+          isBudgetFriendly: true,
+          breakdown: {
+            visitFee: 500,
+            estimatedHours: 2,
+            hourlyRate: realProvider.hourly_rate ?? 500,
+            laborFee: Math.max(0, args.finalPrice - 500),
+            urgencySurcharge: 0,
+            loyaltyDiscount: 0,
+            total: args.finalPrice,
+            partsDisclaimer: 'Parts/materials not included. Final price may vary after inspection.',
+          },
+        } as any,
+        {
+          slot: `${args.requestedDate} ${args.requestedTime}`,
+          date: args.requestedDate,
+          startTime: args.requestedTime,
+          endTime,
+          conflictDetected: false,
+          availabilityId: null,
+        } as any,
+        { complexity: 'intermediate', reason: 'Confirmed via chat', requiredCertifications: [], estimatedDurationHours: 2, confidence: 1 },
         args.userRequest || 'ADK Booking',
-        'unknown',
+        realProvider.area || 'unknown',
         sessionId
       )
 

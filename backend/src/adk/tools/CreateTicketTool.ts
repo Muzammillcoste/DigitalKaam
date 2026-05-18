@@ -22,7 +22,7 @@ export const CreateTicketTool = new Tool({
       },
       disputeType: {
         type: Type.STRING,
-        description: 'Type of dispute: no_show, quality, price, other'
+        description: 'Type of dispute. Must be one of: no_show, quality, price, cancellation, overrun'
       },
       description: {
         type: Type.STRING,

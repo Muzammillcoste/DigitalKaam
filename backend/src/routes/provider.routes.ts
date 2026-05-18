@@ -61,11 +61,12 @@ router.get('/:providerId/availability', async (req: Request, res: Response) => {
   return res.json(data)
 })
 
-// GET /api/provider/:providerId/traces — agent trace logs
+// GET /api/provider/:providerId/traces — agent trace logs for this provider
 router.get('/:providerId/traces', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('traces')
     .select('*')
+    .eq('provider_id', req.params.providerId)
     .order('timestamp', { ascending: false })
     .limit(50)
   if (error) return res.status(500).json({ error: error.message })

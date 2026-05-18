@@ -139,8 +139,15 @@ export async function processDiscovery(
 
   console.log(`[DiscoveryController] Raw candidates from DB: ${candidates.length}`)
   if (error) console.log(`[DiscoveryController] DB error:`, error)
+  if (candidates.length === 0) {
+    console.log(`[DiscoveryController] ⚠ ZERO results from DB. Possible causes: service_type column values don't match any of: [${serviceCandidates.join(', ')}], or no active providers.`)
+  } else {
+    console.log(`[DiscoveryController] Raw DB results (name | service_type | area | lat | lng):`) 
+    candidates.forEach(p => console.log(`  • ${p.name} | service_type='${p.service_type}' | area='${p.area}' | lat=${p.lat} | lng=${p.lng} | radius=${p.travel_radius}km`))
+  }
 
   // Filter by travel radius from search area, or exact area match if coords missing
+  console.log(`[DiscoveryController] Applying radius filter. Search area coords: lat=${areaCoords?.lat} lng=${areaCoords?.lng}`)
   candidates = candidates.filter((p) => {
     if (normalizedSearchArea === 'unknown') {
       return true
@@ -155,6 +162,7 @@ export async function processDiscovery(
 
     const dist = haversineKm(areaCoords.lat, areaCoords.lng, p.lat, p.lng)
     const inRadius = dist <= (p.travel_radius ?? 15)
+    console.log(`  [RadiusFilter] ${p.name}: dist=${dist.toFixed(2)}km, radius=${p.travel_radius ?? 15}km → ${inRadius ? '✓ KEPT' : '✗ DROPPED'}`)
     if (!inRadius) console.log(`[DiscoveryController] Dropped ${p.name}: Distance ${dist.toFixed(2)}km > radius ${p.travel_radius ?? 15}km`)
     return inRadius
   })

@@ -35,11 +35,18 @@ Guidelines:
 Respond with ONLY the JSON, no markdown.
 `
 
+  console.log(`\n[ComplexityController] ── Classifying complexity ──`)
+  console.log(`  Service: "${intent.service}" | Severity: ${intent.severity}`)
+  console.log(`  User description: "${intent.rawInput}"`)
+
   let output: ComplexityOutput
   try {
     const raw = await callGemini(prompt)
     const cleaned = raw.replace(/```json|```/g, '').trim()
     output = JSON.parse(cleaned)
+    console.log(`[ComplexityController] Gemini result: complexity=${output.complexity}, estimatedHours=${output.estimatedDurationHours}, confidence=${output.confidence}`)
+    console.log(`  Reason: ${output.reason}`)
+    console.log(`  Required certs: [${(output.requiredCertifications || []).join(', ') || 'none'}]`)
   } catch {
     output = {
       complexity: 'intermediate',
@@ -48,6 +55,7 @@ Respond with ONLY the JSON, no markdown.
       estimatedDurationHours: 2,
       confidence: 0.5,
     }
+    console.log(`[ComplexityController] ⚠ Gemini parse failed — using fallback: intermediate, 2hrs`)
   }
 
   await supabase.from('traces').insert({

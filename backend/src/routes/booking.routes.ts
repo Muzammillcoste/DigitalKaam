@@ -2,9 +2,13 @@ import { Router, Request, Response } from 'express'
 import { supabase } from '../lib/supabase'
 import { updateLifecycleStatus } from '../controllers/lifecycleController'
 import { updateReputation } from '../controllers/reputationController'
+import { requireAuth } from '../middleware/auth'
 import { v4 as uuidv4 } from 'uuid'
 
 const router = Router()
+
+// Require valid JWT on all booking routes
+router.use(requireAuth)
 
 // GET /api/booking/:bookingId — fetch booking + receipt
 router.get('/:bookingId', async (req: Request, res: Response) => {
@@ -17,12 +21,13 @@ router.get('/:bookingId', async (req: Request, res: Response) => {
   return res.json(data)
 })
 
-// GET /api/booking/user/:userId — all bookings for a user
-router.get('/user/:userId', async (req: Request, res: Response) => {
+// GET /api/booking/user/me — all bookings for the authenticated user
+router.get('/user/me', async (req: Request, res: Response) => {
+  const userId = req.user!.id
   const { data, error } = await supabase
     .from('bookings')
     .select('*, providers(name, service_type, rating)')
-    .eq('user_id', req.params.userId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
   return res.json(data)
@@ -67,8 +72,7 @@ router.post('/:bookingId/feedback', async (req: Request, res: Response) => {
   if (!userId || !providerId || !rating) {
     return res.status(400).json({ error: 'userId, providerId, and rating are required' })
   }
-  const { updateReputation: repController } = await import('../controllers/reputationController')
-  const result = await repController(
+  const result = await updateReputation(
     req.params.bookingId as string, providerId, userId,
     rating, reviewText ?? '', sessionId ?? uuidv4()
   )

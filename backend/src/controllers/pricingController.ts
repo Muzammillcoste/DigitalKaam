@@ -6,12 +6,13 @@ import { ContextOutput } from './contextController'
 
 export interface PriceBreakdown {
   visitFee: number
-  distanceFee: number
+  estimatedHours: number
+  hourlyRate: number
+  laborFee: number
   urgencySurcharge: number
-  complexitySurcharge: number
-  demandSurge: number
   loyaltyDiscount: number
   total: number
+  partsDisclaimer: string
 }
 
 export interface PricingOutput {
@@ -29,40 +30,46 @@ export async function processPricing(
   context: ContextOutput,
   sessionId: string
 ): Promise<PricingOutput> {
+  // ── Visit fee ────────────────────────────────────────────────────────────────
+  // Flat diagnostic/travel fee the provider charges on arrival.
   const visitFee = 500
 
-  // Distance fee: PKR 30 per km
-  const distanceFee = Math.round(provider.distanceKm * 30)
+  // ── Labor fee = provider's actual hourly rate × Gemini-estimated hours ───────
+  // estimatedDurationHours comes from ComplexityAgent (Gemini AI).
+  // hourly_rate is the provider's real rate stored in the DB.
+  const estimatedHours = complexity.estimatedDurationHours ?? 1
+  const hourlyRate = provider.hourly_rate ?? 500
+  const laborFee = Math.round(hourlyRate * estimatedHours)
 
-  // Urgency surcharge
-  const urgencyMap = { low: 0, medium: 100, high: 250 }
-  const urgencySurcharge = intent.severity === 'high' ? urgencyMap.high :
-    intent.severity === 'medium' ? urgencyMap.medium : urgencyMap.low
+  // ── Urgency surcharge ────────────────────────────────────────────────────────
+  // High urgency (same-day / emergency) adds a flat surcharge.
+  const urgencyMap: Record<string, number> = { low: 0, medium: 100, high: 250 }
+  const urgencySurcharge = urgencyMap[intent.severity] ?? 0
 
-  // Complexity surcharge
-  const complexityMap = { basic: 0, intermediate: 200, complex: 400 }
-  const complexitySurcharge = complexityMap[complexity.complexity]
+  // ── Loyalty discount: PKR 50 per 100 points, capped at PKR 200 ──────────────
+  const loyaltyDiscount = Math.min(200, Math.floor((context.loyaltyPoints ?? 0) / 100) * 50)
 
-  // Demand surge (mock: high severity = surge)
-  const demandSurge = intent.severity === 'high' ? 100 : 0
+  const subtotal = visitFee + laborFee + urgencySurcharge
+  const total = Math.max(visitFee, subtotal - loyaltyDiscount) // never below visit fee
 
-  // Loyalty discount: 50 PKR per 100 points, max 200
-  const loyaltyDiscount = Math.min(200, Math.floor(context.loyaltyPoints / 100) * 50)
-
-  const subtotal = visitFee + distanceFee + urgencySurcharge + complexitySurcharge + demandSurge
-  const total = Math.max(0, subtotal - loyaltyDiscount)
-
-  const isBudgetFriendly = intent.budgetSensitivity === 'high' && total > 1500
+  console.log(`\n[PricingController] ── Calculating quote for ${provider.name} ──`)
+  console.log(`  hourly_rate=${hourlyRate} PKR/hr × estimatedHours=${estimatedHours}hr = laborFee=${laborFee} PKR`)
+  console.log(`  visitFee=${visitFee} + laborFee=${laborFee} + urgency=${urgencySurcharge} - loyalty=${loyaltyDiscount} = PKR ${total}`)
+  console.log(`  complexity=${complexity.complexity} | severity=${intent.severity} | loyaltyPoints=${context.loyaltyPoints ?? 0}`)
 
   const breakdown: PriceBreakdown = {
     visitFee,
-    distanceFee,
+    estimatedHours,
+    hourlyRate,
+    laborFee,
     urgencySurcharge,
-    complexitySurcharge,
-    demandSurge,
     loyaltyDiscount,
     total,
+    partsDisclaimer:
+      'Parts/materials not included. Final price may vary after technician inspects the job.',
   }
+
+  const isBudgetFriendly = intent.budgetSensitivity === 'high' && total > 1500
 
   const output: PricingOutput = {
     breakdown,
@@ -70,7 +77,7 @@ export async function processPricing(
     currency: 'PKR',
     isBudgetFriendly: !isBudgetFriendly,
     alternativeBudgetNote: isBudgetFriendly
-      ? 'Budget tip: Scheduling for a non-urgent time could reduce cost by PKR 250–350.'
+      ? 'Budget tip: Scheduling for a non-urgent slot could save PKR 100–250.'
       : undefined,
   }
 
@@ -79,15 +86,19 @@ export async function processPricing(
     agent: 'PricingAgent',
     input: {
       provider: provider.name,
-      distanceKm: provider.distanceKm,
+      hourlyRate,
+      estimatedHours,
       severity: intent.severity,
       complexity: complexity.complexity,
       loyaltyPoints: context.loyaltyPoints,
     },
     output: breakdown,
-    reasoning: `Visit: ${visitFee} + Distance: ${distanceFee} + Urgency: ${urgencySurcharge} + Complexity: ${complexitySurcharge} + Surge: ${demandSurge} - Discount: ${loyaltyDiscount} = PKR ${total}`,
+    reasoning:
+      `Visit: PKR ${visitFee} + Labor: ${hourlyRate}/hr × ${estimatedHours}hr = PKR ${laborFee}` +
+      ` + Urgency: PKR ${urgencySurcharge} - Loyalty: PKR ${loyaltyDiscount} = PKR ${total}` +
+      ` | Complexity: ${complexity.complexity}, Reason: ${complexity.reason}`,
     tool_calls: { tool: 'PricingEngine' },
-    confidence_score: 0.95,
+    confidence_score: 0.9,
   })
 
   return output
