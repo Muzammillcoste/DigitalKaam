@@ -38,6 +38,17 @@ router.get('/user/:userId', async (req: Request, res: Response) => {
 
 // POST /api/provider
 router.post('/', async (req: Request, res: Response) => {
+  const { user_id } = req.body;
+  if (user_id) {
+    const { data: existing } = await supabase
+      .from('providers')
+      .select('*')
+      .eq('user_id', user_id)
+      .maybeSingle();
+    if (existing) {
+      return res.status(200).json(existing);
+    }
+  }
   const { data, error } = await supabase.from('providers').insert([req.body]).select().single();
   if (error) return res.status(500).json({ error: error.message });
   return res.status(201).json(data);
