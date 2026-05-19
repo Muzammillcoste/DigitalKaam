@@ -60,6 +60,11 @@ export async function createDisputeTicket(
       refundAmount = Math.round((booking?.price ?? 0) * 0.15)
       providerFlagged = true
       break
+    default:
+      recommendation = 'General complaint received. Under review by support team.'
+      refundAmount = 0
+      providerFlagged = false
+      break
   }
 
   // Insert dispute

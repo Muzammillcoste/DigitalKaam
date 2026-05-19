@@ -67,17 +67,29 @@ export async function processMatching(
     return { ranked: [], topProvider: null, reasoning: 'No providers available in this area.', noProvidersAvailable: true }
   }
 
-  const areaCoords = AREA_COORDS[intent.location] ?? AREA_COORDS['unknown']
+  const areaCoords = AREA_COORDS[discovery.normalizedSearchArea] ?? AREA_COORDS[intent.location] ?? AREA_COORDS['unknown']
+
+  console.log(`[MatchingController] Starting match for ${candidates.length} candidates. Date: ${requestedDate}, Time: ${requestedTime}`)
 
   // Get availability for requested date
-  const { data: availabilityRecords } = await supabase
+  const { data: availabilityRecords, error: availabilityError } = await supabase
     .from('availability')
     .select('*')
     .eq('date', requestedDate)
     .eq('is_booked', false)
     .in('provider_id', candidates.map((c) => c.id))
 
+  if (availabilityError) {
+    console.log(`[MatchingController] Availability DB error:`, availabilityError)
+  }
+  
   const availableProviderIds = new Set((availabilityRecords ?? []).map((a: any) => a.provider_id))
+  console.log(`[MatchingController] Availability records found for date ${requestedDate}: ${availabilityRecords?.length || 0}`)
+  if (availabilityRecords && availabilityRecords.length > 0) {
+    console.log(`[MatchingController] Available provider IDs for ${requestedDate}:`, [...availableProviderIds])
+  } else {
+    console.log(`[MatchingController] \u26a0 No availability rows found for date ${requestedDate}. All providers will score availScore=0 — they will still appear but ranked lower.`)
+  }
 
   // Compute stats for normalization
   const maxRate = Math.max(...candidates.map((p) => p.hourly_rate))
@@ -133,6 +145,9 @@ export async function processMatching(
 
     return { ...p, matchScore, distanceKm: distKm, scoreBreakdown, selectionReason, isAvailable }
   })
+
+  console.log(`[MatchingController] Scored all ${ranked.length} candidates (before sort):`)
+  ranked.forEach(p => console.log(`  \u2022 ${p.name} | score=${p.matchScore.toFixed(3)} | dist=${p.distanceKm.toFixed(2)}km | avail=${p.isAvailable} | breakdown:`, p.scoreBreakdown))
 
   // Sort by score descending
   ranked.sort((a, b) => b.matchScore - a.matchScore)

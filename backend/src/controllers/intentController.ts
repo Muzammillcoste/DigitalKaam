@@ -24,7 +24,7 @@ User Request: "${userInput}"
 
 Return ONLY a valid JSON object with these fields:
 {
-  "service": "<service type: AC Repair | Electrician | Plumber | Mechanic | Tutor | Beautician | Driver | Other>",
+  "service": "<EXACTLY one of: AC Technician | Electrician | Plumber | Mechanic | Tutor | Beautician | Driver | Other>",
   "severity": "<low | medium | high>",
   "location": "<area name or 'unknown'>",
   "time": "<when they want service, e.g. 'Tomorrow Morning', 'Today Evening', 'ASAP', 'unknown'>",
@@ -35,12 +35,25 @@ Return ONLY a valid JSON object with these fields:
   "clarificationQuestion": "<ask user to confirm if clarificationNeeded, else null>"
 }
 
-Examples of Roman Urdu inputs and their meanings:
-- "AC bilkul kaam nahi kar raha" = AC not working at all (severity: high)
-- "kal subah" = tomorrow morning
-- "budget zyada nahi" = budget is tight (budgetSensitivity: high)
-- "Gulshan mein" = in Gulshan area
-- "abhi chahiye" = needed right now (time: ASAP, severity: high)
+IMPORTANT service type rules — return the exact string, nothing else:
+- Any AC / air conditioner / cooling / inverter / HVAC query → "AC Technician"
+- Any electrical / bijli / wiring / fan repair query → "Electrician"
+- Any plumbing / pipe / pani / drain / leak query → "Plumber"
+- Any car / gaari / vehicle / motorcycle repair query → "Mechanic"  (NOTE: "Mechanic" means car mechanic, NOT AC technician)
+- Any teaching / tuition / ustaad query → "Tutor"
+- Any makeup / beauty / parlour / salon query → "Beautician"
+- Any driving / chauffeur query → "Driver"
+
+Examples of Roman Urdu inputs and their mappings:
+- "AC bilkul kaam nahi kar raha" → service: "AC Technician", severity: high
+- "AC wala chahiye" → service: "AC Technician"
+- "bijli ka masla hai" → service: "Electrician"
+- "nal se pani leak ho raha" → service: "Plumber"
+- "gaari theek karwani hai" → service: "Mechanic"
+- "kal subah" → time: "Tomorrow Morning"
+- "budget zyada nahi" → budgetSensitivity: "high"
+- "Gulshan mein" → location: "Gulshan"
+- "abhi chahiye" → time: "ASAP", severity: high
 
 Respond with ONLY the JSON object, no markdown, no explanation.
 `

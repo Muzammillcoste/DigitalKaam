@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import rateLimit from 'express-rate-limit'
 dotenv.config()
 
 import serviceRoutes from './routes/service.routes'
@@ -14,21 +15,13 @@ import tracesRoutes from './routes/traces.routes'
 import feedbackRoutes from './routes/feedback.routes'
 import chatRoutes from './routes/chat.routes'
 import authRoutes from './routes/auth.routes'
+import adminRoutes from './routes/admin.routes'
 
 const app = express()
 const PORT = process.env.PORT ?? 3000
 
 app.use(cors())
 app.use(express.json())
-
-// Global Request Logger
-app.use((req, res, next) => {
-  console.log(`\n📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl}`);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('   Body:', JSON.stringify(req.body));
-  }
-  next();
-})
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -47,6 +40,7 @@ app.use('/api/traces', tracesRoutes)
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.listen(PORT, () => {
   console.log(`\n🚀 DigitalKaam Antigravity API running on http://localhost:${PORT}`)

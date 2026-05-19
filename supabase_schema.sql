@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
     email TEXT,
     home_area TEXT,
     loyalty_points INTEGER DEFAULT 0,
+    booking_count INTEGER DEFAULT 0,
     preferred_providers UUID[] DEFAULT '{}',
     blacklisted_providers UUID[] DEFAULT '{}',
     past_service_types TEXT[] DEFAULT '{}',
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.providers (
     lat NUMERIC,
     lng NUMERIC,
     area TEXT,
-    status TEXT DEFAULT 'pending_review',
+    status TEXT DEFAULT 'active',
     expo_push_token TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS public.availability (
 -- 4. Create bookings table
 CREATE TABLE IF NOT EXISTS public.bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_ref TEXT UNIQUE,
     provider_id UUID NOT NULL REFERENCES public.providers(id),
     user_id UUID NOT NULL REFERENCES public.user_profiles(id),
     user_request TEXT,
@@ -129,3 +131,54 @@ ALTER TABLE public.reputation DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.traces DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.disputes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback DISABLE ROW LEVEL SECURITY;
+
+-- 9. Chat Messages table (persistent conversation history)
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON public.chat_messages(session_id, created_at);
+
+-- 10. Chat Sessions table (rolling summary + metadata)
+CREATE TABLE IF NOT EXISTS public.chat_sessions (
+    session_id TEXT PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    summary TEXT DEFAULT '',
+    turn_count INTEGER DEFAULT 0,
+    booking_ids UUID[] DEFAULT '{}',
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.chat_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_sessions DISABLE ROW LEVEL SECURITY;
+
+-- 11. Platform configuration table (edit values here to change fees/limits without code deploys)
+-- Update any value with: UPDATE platform_config SET value = '150', updated_at = NOW() WHERE key = 'platform_fee_fixed';
+CREATE TABLE IF NOT EXISTS public.platform_config (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Default config values (run once at setup)
+INSERT INTO public.platform_config (key, value, description) VALUES
+  ('platform_fee_fixed',   '50',   'Flat platform fee added to every booking (PKR). Set to 0 to disable.'),
+  ('platform_fee_percent', '5',    'Percentage of total taken as platform fee (%). Applied AFTER fixed fee. Set to 0 to disable.'),
+  ('visit_fee',            '500',  'Flat provider visit/diagnostic fee (PKR). Paid to provider, not platform.'),
+  ('urgency_fee_high',     '250',  'Urgency surcharge for severity=high (PKR).'),
+  ('urgency_fee_medium',   '100',  'Urgency surcharge for severity=medium (PKR).'),
+  ('loyalty_discount_cap', '200',  'Maximum loyalty discount per booking (PKR).')
+ON CONFLICT (key) DO NOTHING;
+
+ALTER TABLE public.platform_config DISABLE ROW LEVEL SECURITY;
+
+-- ── Migrations (run these if tables already exist) ─────────────────────────
+-- Add booking_count to user_profiles if missing:
+--   ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS booking_count INTEGER DEFAULT 0;
+-- Fix providers that defaulted to 'pending_review' so discovery can find them:
+--   UPDATE public.providers SET status = 'active' WHERE status = 'pending_review';

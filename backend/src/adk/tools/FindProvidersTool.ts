@@ -30,13 +30,18 @@ export const FindProvidersTool = new Tool({
   },
   execute: async (args: any) => {
     try {
+      console.log(`\n[FindProvidersTool] Executing with args:`, args)
       const intentMock = { service: args.serviceType, location: args.area } as any
+      
+      console.log(`[FindProvidersTool] -> Calling processDiscovery...`)
       const discoveryOutput = await processDiscovery(
         intentMock,
         {} as any, // Mock complexity
         args.sessionId || 'adk-session'
       )
 
+      console.log(`[FindProvidersTool] -> processDiscovery returned ${discoveryOutput.candidates.length} candidates.`)
+      console.log(`[FindProvidersTool] -> Calling processMatching...`)
       const matchingOutput = await processMatching(
         discoveryOutput,
         intentMock,
@@ -45,6 +50,7 @@ export const FindProvidersTool = new Tool({
         args.requestedTime,
         args.sessionId || 'adk-session'
       )
+      console.log(`[FindProvidersTool] -> processMatching returned ${matchingOutput.ranked.length} ranked providers.`)
 
       return { 
         success: true, 

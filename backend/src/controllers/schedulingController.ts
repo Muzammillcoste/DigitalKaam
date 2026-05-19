@@ -20,6 +20,9 @@ export async function processScheduling(
   estimatedDurationHours: number,
   sessionId: string
 ): Promise<SchedulingOutput> {
+  console.log(`\n[SchedulingController] ── Finding slot for ${provider.name} ──`)
+  console.log(`  Requested: ${requestedDate} at ${requestedTime} | estimatedDuration: ${estimatedDurationHours}hr`)
+
   // Check if requested slot is available
   const { data: slots } = await supabase
     .from('availability')
@@ -31,6 +34,7 @@ export async function processScheduling(
 
   // Find exact or closest slot
   const availableSlots = slots ?? []
+  console.log(`  Available slots for ${requestedDate}: ${availableSlots.length === 0 ? '⚠ NONE' : availableSlots.map((s: any) => s.start_time).join(', ')}`)
 
   // Try to find a slot that fits the requested time
   let chosenSlot = availableSlots.find((s: any) => {
@@ -49,10 +53,14 @@ export async function processScheduling(
     conflictDetected = true
     conflictReason = `Requested time ${requestedTime} is unavailable (slot booked or travel conflict)`
     suggestedAlternateSlot = chosenSlot.start_time
+    console.log(`  ⚠ Requested time ${requestedTime} not found — falling back to first available: ${chosenSlot.start_time}`)
+  } else if (chosenSlot) {
+    console.log(`  ✓ Matched slot: ${chosenSlot.start_time} (id: ${chosenSlot.id})`)
   }
 
   if (!chosenSlot) {
     // No slots at all — return conflict with waitlist
+    console.log(`  ✗ No slots available at all for ${provider.name} on ${requestedDate}`)
     await supabase.from('traces').insert({
       session_id: sessionId,
       agent: 'SchedulingAgent',
@@ -74,8 +82,9 @@ export async function processScheduling(
     }
   }
 
-  const endHour = parseInt(chosenSlot.start_time.split(':')[0]) + Math.ceil(estimatedDurationHours)
+  const endHour = Math.min(23, parseInt(chosenSlot.start_time.split(':')[0]) + Math.ceil(estimatedDurationHours))
   const endTime = `${String(endHour).padStart(2, '0')}:00`
+  console.log(`  Scheduled: ${chosenSlot.start_time} → ${endTime} on ${requestedDate}`)
 
   const reasoning = conflictDetected
     ? `Requested time ${requestedTime} was unavailable. Travel buffer conflict detected. Suggested alternate: ${suggestedAlternateSlot}`
