@@ -16,19 +16,28 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import { useTranslation } from '@/i18n';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import { initials, formatRelativeTime } from '@/utils/format';
 
 /**
  * Claude-style sidebar:
- *   • "New Chat" + "Bookings" at the top
+ *   • "New Chat" + "Bookings" + "Start Earning" at the top
  *   • a scrollable "Recent Chats" list in the middle
  *   • a profile strip pinned to the very bottom (avatar · name · ⚙️)
  */
 export function AppSidebar({ navigation }: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
-  const { profile } = useAuthStore();
+  const { profile, providerProfile } = useAuthStore();
   const {
     sessions,
     sessionsLoading,
@@ -69,8 +78,13 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
     navigation.closeDrawer();
   };
 
+  const handleStartEarning = () => {
+    navigation.navigate('SettingsRoot', { screen: 'BecomeProvider' });
+    navigation.closeDrawer();
+  };
+
   const handleSettings = () => {
-    navigation.navigate('SettingsRoot');
+    navigation.navigate('SettingsRoot', { screen: 'Settings' });
     navigation.closeDrawer();
   };
 
@@ -86,18 +100,30 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
 
       {/* Primary actions */}
       <Pressable style={[styles.action, { flexDirection: rowDir }]} onPress={handleNewChat}>
-        <Ionicons name="create-outline" size={20} color={Colors.text} />
+        <Ionicons name="create-outline" size={20} color={c.text} />
         <Text style={[styles.actionText, { textAlign: align }]}>
           {t('drawer.newChat')}
         </Text>
       </Pressable>
 
       <Pressable style={[styles.action, { flexDirection: rowDir }]} onPress={handleBookings}>
-        <Ionicons name="calendar-outline" size={20} color={Colors.text} />
+        <Ionicons name="calendar-outline" size={20} color={c.text} />
         <Text style={[styles.actionText, { textAlign: align }]}>
           {t('drawer.bookings')}
         </Text>
       </Pressable>
+
+      {!providerProfile && (
+        <Pressable
+          style={[styles.action, styles.actionAccent, { flexDirection: rowDir }]}
+          onPress={handleStartEarning}
+        >
+          <Ionicons name="cash-outline" size={20} color={c.primary} />
+          <Text style={[styles.actionText, styles.actionTextAccent, { textAlign: align }]}>
+            {t('drawer.startEarning')}
+          </Text>
+        </Pressable>
+      )}
 
       {/* Recent chats */}
       <Text style={[styles.sectionLabel, { textAlign: align }]}>
@@ -111,7 +137,7 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
       >
         {sessionsLoading && sessions.length === 0 ? (
           <ActivityIndicator
-            color={Colors.primary}
+            color={c.primary}
             style={{ marginTop: Spacing.base }}
           />
         ) : sessions.length === 0 ? (
@@ -136,7 +162,7 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={16}
-                  color={isActive ? Colors.primary : Colors.textSecondary}
+                  color={isActive ? c.primary : c.textSecondary}
                 />
                 <View style={styles.recentTextWrap}>
                   <Text
@@ -183,92 +209,95 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
           )}
         </View>
         <Pressable onPress={handleSettings} hitSlop={10} style={styles.gearBtn}>
-          <Ionicons name="settings-outline" size={22} color={Colors.textSecondary} />
+          <Ionicons name="settings-outline" size={22} color={c.textSecondary} />
         </Pressable>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surface },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.surface },
 
-  brandRow: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  brandMark: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandMarkText: { color: Colors.textInverse, fontWeight: '800', fontSize: 13 },
-  brandText: { ...Typography.h4, color: Colors.text },
+    brandRow: {
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    brandMark: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.md,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    brandMarkText: { color: c.textInverse, fontWeight: '800', fontSize: 13 },
+    brandText: { ...Typography.h4, color: c.text },
 
-  action: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginHorizontal: Spacing.sm,
-    borderRadius: Radius.md,
-  },
-  actionText: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
+    action: {
+      alignItems: 'center',
+      gap: Spacing.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginHorizontal: Spacing.sm,
+      borderRadius: Radius.md,
+    },
+    actionAccent: { backgroundColor: `${c.primary}12` },
+    actionText: { ...Typography.bodyLarge, color: c.text, flex: 1 },
+    actionTextAccent: { color: c.primary, fontWeight: '600' },
 
-  sectionLabel: {
-    ...Typography.label,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
-  recentList: { flex: 1 },
-  recentContent: { paddingHorizontal: Spacing.sm, paddingBottom: Spacing.base },
-  emptyText: {
-    ...Typography.body,
-    color: Colors.textDisabled,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.base,
-  },
-  recentItem: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
-  },
-  recentItemActive: { backgroundColor: `${Colors.primary}12` },
-  recentTextWrap: { flex: 1 },
-  recentTitle: { ...Typography.body, color: Colors.text },
-  recentTitleActive: { color: Colors.primary, fontWeight: '600' },
-  recentMeta: { ...Typography.caption, color: Colors.textDisabled, marginTop: 1 },
+    sectionLabel: {
+      ...Typography.label,
+      color: c.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      paddingHorizontal: Spacing.lg,
+      marginTop: Spacing.lg,
+      marginBottom: Spacing.xs,
+    },
+    recentList: { flex: 1 },
+    recentContent: { paddingHorizontal: Spacing.sm, paddingBottom: Spacing.base },
+    emptyText: {
+      ...Typography.body,
+      color: c.textDisabled,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.base,
+    },
+    recentItem: {
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      borderRadius: Radius.md,
+    },
+    recentItemActive: { backgroundColor: `${c.primary}12` },
+    recentTextWrap: { flex: 1 },
+    recentTitle: { ...Typography.body, color: c.text },
+    recentTitleActive: { color: c.primary, fontWeight: '600' },
+    recentMeta: { ...Typography.caption, color: c.textDisabled, marginTop: 1 },
 
-  profileStrip: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: Colors.textInverse, fontWeight: '700', fontSize: 14 },
-  profileTextWrap: { flex: 1 },
-  profileName: { ...Typography.bodyLarge, fontWeight: '600', color: Colors.text },
-  profileEmail: { ...Typography.caption, color: Colors.textSecondary },
-  gearBtn: { padding: Spacing.xs },
-});
+    profileStrip: {
+      alignItems: 'center',
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.full,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { color: c.textInverse, fontWeight: '700', fontSize: 14 },
+    profileTextWrap: { flex: 1 },
+    profileName: { ...Typography.bodyLarge, fontWeight: '600', color: c.text },
+    profileEmail: { ...Typography.caption, color: c.textSecondary },
+    gearBtn: { padding: Spacing.xs },
+  });

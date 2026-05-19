@@ -19,6 +19,7 @@ const en = {
   // ── Drawer / Sidebar ──────────────────────────────────────
   'drawer.newChat': 'New Chat',
   'drawer.bookings': 'Bookings',
+  'drawer.startEarning': 'Start Earning',
   'drawer.recentChats': 'Recent Chats',
   'drawer.noRecentChats': 'No recent chats yet',
   'drawer.settings': 'Settings',
@@ -32,6 +33,10 @@ const en = {
     "Assalam-o-Alaikum! 👋\n\nI'm your DigitalKaam assistant. Tell me what service you need — for example:\n\n\"Mera AC kharab hai, Gulshan mein kal subah mistri chahiye\"\n\nor\n\n\"I need a plumber in DHA today afternoon\"",
   'chat.connectionError':
     'Sorry, I could not connect to the service. Please try again.',
+  'chat.typing': 'DigitalKaam is typing…',
+  'chat.transcribing': 'Transcribing your voice…',
+  'chat.voiceError': 'Could not transcribe the recording. Please try again.',
+  'chat.micDenied': 'Microphone permission denied',
 
   // ── Settings ──────────────────────────────────────────────
   'settings.title': 'Settings',
@@ -125,6 +130,7 @@ const ur: Translations = {
 
   'drawer.newChat': 'نئی گفتگو',
   'drawer.bookings': 'بکنگز',
+  'drawer.startEarning': 'کمائی شروع کریں',
   'drawer.recentChats': 'حالیہ گفتگوئیں',
   'drawer.noRecentChats': 'ابھی کوئی حالیہ گفتگو نہیں',
   'drawer.settings': 'ترتیبات',
@@ -137,6 +143,11 @@ const ur: Translations = {
     'السلام علیکم! 👋\n\nمیں آپ کا ڈیجیٹل کام اسسٹنٹ ہوں۔ مجھے بتائیں آپ کو کون سی سروس چاہیے — مثلاً:\n\n"میرا اے سی خراب ہے، گلشن میں کل صبح مستری چاہیے"\n\nیا\n\n"مجھے ڈی ایچ اے میں آج دوپہر پلمبر چاہیے"',
   'chat.connectionError':
     'معذرت، سروس سے رابطہ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔',
+  'chat.typing': 'ڈیجیٹل کام جواب لکھ رہا ہے…',
+  'chat.transcribing': 'آپ کی آواز کو متن میں بدلا جا رہا ہے…',
+  'chat.voiceError':
+    'ریکارڈنگ کو متن میں تبدیل نہیں کیا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔',
+  'chat.micDenied': 'مائیکروفون کی اجازت مسترد کر دی گئی',
 
   'settings.title': 'ترتیبات',
   'settings.profile': 'پروفائل',

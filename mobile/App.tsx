@@ -11,11 +11,13 @@ import {
   addNotificationListener,
   addResponseListener,
 } from './src/utils/notifications';
+import { useIsDark } from './src/theme';
 import { api } from './utils/api';
 
 export default function App() {
   const { initialize, userId, setProfile, setProviderProfile } = useAuthStore();
   const { showToast } = useUIStore();
+  const isDark = useIsDark();
 
   useEffect(() => {
     initialize();
@@ -55,7 +57,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="auto" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <RootNavigator />
         <Toast />
       </SafeAreaProvider>

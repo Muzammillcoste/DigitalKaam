@@ -5,11 +5,19 @@ import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { BookingsScreenProps } from '@/navigation/types';
 
 export function FeedbackScreen({ route, navigation }: BookingsScreenProps<'Feedback'>) {
   const { bookingId, providerId, userId } = route.params;
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { showToast } = useUIStore();
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
@@ -48,7 +56,7 @@ export function FeedbackScreen({ route, navigation }: BookingsScreenProps<'Feedb
             <Ionicons
               name={star <= rating ? 'star' : 'star-outline'}
               size={40}
-              color={star <= rating ? Colors.accent : Colors.border}
+              color={star <= rating ? c.accent : c.border}
             />
           </Pressable>
         ))}
@@ -75,22 +83,23 @@ export function FeedbackScreen({ route, navigation }: BookingsScreenProps<'Feedb
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.xl, gap: Spacing.base },
-  heading: { ...Typography.h3, color: Colors.text },
-  sub: { ...Typography.body, color: Colors.textSecondary },
-  stars: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.base,
-    justifyContent: 'center',
-  },
-  ratingLabel: {
-    ...Typography.h4,
-    color: Colors.accent,
-    textAlign: 'center',
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    content: { padding: Spacing.xl, gap: Spacing.base },
+    heading: { ...Typography.h3, color: c.text },
+    sub: { ...Typography.body, color: c.textSecondary },
+    stars: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.base,
+      justifyContent: 'center',
+    },
+    ratingLabel: {
+      ...Typography.h4,
+      color: c.accent,
+      textAlign: 'center',
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+  });

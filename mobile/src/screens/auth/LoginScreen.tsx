@@ -10,15 +10,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
+import { authApi } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors, Typography, Spacing } from '@/theme';
+import { Typography, Spacing, useThemedStyles, type ColorPalette } from '@/theme';
 import type { AuthScreenProps } from '@/navigation/types';
 
 export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
   const { setSession } = useAuthStore();
   const { showToast } = useUIStore();
 
@@ -40,14 +42,28 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Authenticate against the backend (POST /api/auth/login).
+      const res = await authApi.login({ email: email.trim(), password });
+
+      // Hydrate the Supabase client session from the backend-issued tokens so
+      // token refresh + Authorization headers keep working app-wide.
+      const { error } = await supabase.auth.setSession({
+        access_token: res.access_token,
+        refresh_token: res.refresh_token,
+      });
       if (error) {
         showToast(error.message, 'error');
         return;
       }
-      setSession(data.user.id, data.session.access_token);
-    } catch {
-      showToast('Login failed. Please try again.', 'error');
+      setSession(res.userId, res.access_token);
+    } catch (err: any) {
+      const msg = String(err?.message ?? '');
+      showToast(
+        /401|invalid|credential/i.test(msg)
+          ? 'Invalid email or password'
+          : 'Login failed. Please try again.',
+        'error',
+      );
     } finally {
       setLoading(false);
     }
@@ -103,31 +119,32 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.xl,
-  },
-  header: { alignItems: 'center', marginBottom: Spacing['2xl'] },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.base,
-  },
-  logoText: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  title: { ...Typography.h2, color: Colors.text, marginBottom: 4 },
-  subtitle: { ...Typography.body, color: Colors.textSecondary },
-  form: { gap: 4 },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-  },
-  footerText: { ...Typography.body, color: Colors.textSecondary },
-  link: { ...Typography.body, color: Colors.primary, fontWeight: '600' },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      backgroundColor: c.background,
+      paddingHorizontal: Spacing.xl,
+    },
+    header: { alignItems: 'center', marginBottom: Spacing['2xl'] },
+    logoCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 20,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.base,
+    },
+    logoText: { fontSize: 28, fontWeight: '800', color: '#fff' },
+    title: { ...Typography.h2, color: c.text, marginBottom: 4 },
+    subtitle: { ...Typography.body, color: c.textSecondary },
+    form: { gap: 4 },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: Spacing.xl,
+    },
+    footerText: { ...Typography.body, color: c.textSecondary },
+    link: { ...Typography.body, color: c.primary, fontWeight: '600' },
+  });

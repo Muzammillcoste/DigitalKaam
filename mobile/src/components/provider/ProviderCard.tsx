@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, Radius, useColors, useThemedStyles, type ColorPalette } from '@/theme';
 import { Avatar } from '@/components/ui/Avatar';
 import { formatPrice, formatArea } from '@/utils/format';
 
@@ -24,6 +24,8 @@ interface ProviderCardProps {
 }
 
 export function ProviderCard({ provider, onSelect, compact }: ProviderCardProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.card, compact && styles.cardCompact]}>
       <Avatar name={provider.name} size={compact ? 40 : 52} />
@@ -33,12 +35,12 @@ export function ProviderCard({ provider, onSelect, compact }: ProviderCardProps)
         {!compact && (
           <View style={styles.meta}>
             <View style={styles.metaItem}>
-              <Ionicons name="location-outline" size={12} color={Colors.textSecondary} />
+              <Ionicons name="location-outline" size={12} color={c.textSecondary} />
               <Text style={styles.metaText}>{formatArea(provider.area)}</Text>
             </View>
             {provider.rating != null && (
               <View style={styles.metaItem}>
-                <Ionicons name="star" size={12} color={Colors.accent} />
+                <Ionicons name="star" size={12} color={c.accent} />
                 <Text style={styles.metaText}>{provider.rating.toFixed(1)}</Text>
               </View>
             )}
@@ -53,25 +55,26 @@ export function ProviderCard({ provider, onSelect, compact }: ProviderCardProps)
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardCompact: { padding: Spacing.sm },
-  info: { flex: 1 },
-  name: { ...Typography.h4, color: Colors.text },
-  service: { ...Typography.bodySmall, color: Colors.primary, fontWeight: '600', marginTop: 2 },
-  meta: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  metaText: { ...Typography.caption, color: Colors.textSecondary },
-  right: { alignItems: 'flex-end' },
-  rate: { ...Typography.h4, color: Colors.text },
-  rateLabel: { ...Typography.caption, color: Colors.textSecondary },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: Radius.lg,
+      padding: Spacing.md,
+      gap: Spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    cardCompact: { padding: Spacing.sm },
+    info: { flex: 1 },
+    name: { ...Typography.h4, color: c.text },
+    service: { ...Typography.bodySmall, color: c.primary, fontWeight: '600', marginTop: 2 },
+    meta: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
+    metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    metaText: { ...Typography.caption, color: c.textSecondary },
+    right: { alignItems: 'flex-end' },
+    rate: { ...Typography.h4, color: c.text },
+    rateLabel: { ...Typography.caption, color: c.textSecondary },
+  });

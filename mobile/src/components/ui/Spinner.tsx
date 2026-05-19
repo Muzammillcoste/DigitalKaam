@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { Colors } from '@/theme';
+import { useColors, useThemedStyles, type ColorPalette } from '@/theme';
 
 interface SpinnerProps {
   size?: 'small' | 'large';
@@ -8,22 +8,27 @@ interface SpinnerProps {
   fullScreen?: boolean;
 }
 
-export function Spinner({ size = 'large', color = Colors.primary, fullScreen }: SpinnerProps) {
+export function Spinner({ size = 'large', color, fullScreen }: SpinnerProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const resolved = color ?? c.primary;
+
   if (fullScreen) {
     return (
       <View style={styles.fullScreen}>
-        <ActivityIndicator size={size} color={color} />
+        <ActivityIndicator size={size} color={resolved} />
       </View>
     );
   }
-  return <ActivityIndicator size={size} color={color} />;
+  return <ActivityIndicator size={size} color={resolved} />;
 }
 
-const styles = StyleSheet.create({
-  fullScreen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    fullScreen: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.background,
+    },
+  });

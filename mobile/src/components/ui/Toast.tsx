@@ -2,7 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius, Shadow } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  Shadow,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import { useUIStore, type ToastType } from '@/store/uiStore';
 
 const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
@@ -12,15 +20,10 @@ const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
   info: 'information-circle',
 };
 
-const COLOR_MAP: Record<ToastType, string> = {
-  success: Colors.success,
-  error: Colors.error,
-  warning: Colors.warning,
-  info: Colors.info,
-};
-
 export function Toast() {
   const { toast } = useUIStore();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-120)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -39,7 +42,13 @@ export function Toast() {
     }
   }, [toast]);
 
-  const color = toast ? COLOR_MAP[toast.type] : Colors.info;
+  const colorMap: Record<ToastType, string> = {
+    success: c.success,
+    error: c.error,
+    warning: c.warning,
+    info: c.info,
+  };
+  const color = toast ? colorMap[toast.type] : c.info;
 
   return (
     <Animated.View
@@ -62,20 +71,21 @@ export function Toast() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: Spacing.base,
-    right: Spacing.base,
-    zIndex: 9999,
-  },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    gap: Spacing.sm,
-  },
-  message: { ...Typography.body, color: Colors.text, flex: 1 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      position: 'absolute',
+      left: Spacing.base,
+      right: Spacing.base,
+      zIndex: 9999,
+    },
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      gap: Spacing.sm,
+    },
+    message: { ...Typography.body, color: c.text, flex: 1 },
+  });

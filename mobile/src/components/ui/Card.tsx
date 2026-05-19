@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { View, StyleSheet, Pressable, Animated } from 'react-native';
-import { Colors, Spacing, Radius, Shadow } from '@/theme';
+import { Spacing, Radius, Shadow, useThemedStyles, type ColorPalette } from '@/theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -11,6 +11,7 @@ interface CardProps {
 }
 
 export function Card({ children, onPress, style, padding = Spacing.base, shadow = 'md' }: CardProps) {
+  const styles = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = () =>
@@ -35,10 +36,11 @@ export function Card({ children, onPress, style, padding = Spacing.base, shadow 
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+    },
+  });

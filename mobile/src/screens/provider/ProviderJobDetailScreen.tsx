@@ -12,7 +12,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import { formatDate, formatTime, formatPrice } from '@/utils/format';
 
 type BookingStatus = 'confirmed' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | 'cancelled';
@@ -20,6 +27,8 @@ type BookingStatus = 'confirmed' | 'en_route' | 'arrived' | 'in_progress' | 'com
 export function ProviderJobDetailScreen({ route, navigation }: any) {
   const { bookingId } = route.params;
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { showToast } = useUIStore();
 
   const [loading, setLoading] = useState(true);
@@ -66,7 +75,7 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={c.primary} />
       </View>
     );
   }
@@ -85,79 +94,59 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
     return labels[status] || status;
   };
 
+  const accent =
+    job.status === 'completed'
+      ? c.success
+      : job.status === 'cancelled'
+      ? c.error
+      : c.primary;
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + Spacing['2xl'] }}
     >
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.jobId}>Job #{job.id.slice(0, 8).toUpperCase()}</Text>
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor:
-                job.status === 'completed'
-                  ? `${Colors.success}14`
-                  : job.status === 'cancelled'
-                  ? `${Colors.error}14`
-                  : `${Colors.primary}14`,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.badgeText,
-              {
-                color:
-                  job.status === 'completed'
-                    ? Colors.success
-                    : job.status === 'cancelled'
-                    ? Colors.error
-                    : Colors.primary,
-              },
-            ]}
-          >
+        <View style={[styles.badge, { backgroundColor: `${accent}14` }]}>
+          <Text style={[styles.badgeText, { color: accent }]}>
             {getStatusLabel(job.status)}
           </Text>
         </View>
       </View>
 
-      {/* Customer Info Card */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Customer Details</Text>
         <View style={styles.customerRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{job.user_profiles?.full_name[0]}</Text>
+            <Text style={styles.avatarText}>{job.user_profiles?.full_name?.[0]}</Text>
           </View>
           <View style={styles.customerMeta}>
             <Text style={styles.customerName}>{job.user_profiles?.full_name}</Text>
             <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={14} color={Colors.textSecondary} />
+              <Ionicons name="location-outline" size={14} color={c.textSecondary} />
               <Text style={styles.locationText}>{job.user_profiles?.home_area || 'Gulshan'}</Text>
             </View>
           </View>
           {job.user_profiles?.phone && (
             <Pressable style={styles.callBtn} onPress={() => makeCall(job.user_profiles.phone)}>
-              <Ionicons name="call" size={20} color={Colors.primary} />
+              <Ionicons name="call" size={20} color={c.primary} />
             </Pressable>
           )}
         </View>
       </View>
 
-      {/* Booking Details Card */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Job Schedule</Text>
         <View style={styles.scheduleRow}>
-          <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+          <Ionicons name="calendar-outline" size={20} color={c.primary} />
           <View>
             <Text style={styles.scheduleVal}>{formatDate(job.scheduled_time)}</Text>
             <Text style={styles.scheduleLbl}>Scheduled Date</Text>
           </View>
         </View>
         <View style={[styles.scheduleRow, { marginTop: Spacing.base }]}>
-          <Ionicons name="time-outline" size={20} color={Colors.primary} />
+          <Ionicons name="time-outline" size={20} color={c.primary} />
           <View>
             <Text style={styles.scheduleVal}>{formatTime(job.scheduled_time)}</Text>
             <Text style={styles.scheduleLbl}>Scheduled Time</Text>
@@ -165,7 +154,6 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      {/* Description Card */}
       {job.user_request && (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Job Description</Text>
@@ -173,7 +161,6 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
         </View>
       )}
 
-      {/* Price breakdown */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Financial Breakdown</Text>
         <View style={styles.priceRow}>
@@ -187,10 +174,9 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      {/* Lifecycle Actions */}
       <View style={styles.actionContainer}>
         {updating ? (
-          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: Spacing.base }} />
+          <ActivityIndicator size="large" color={c.primary} style={{ marginVertical: Spacing.base }} />
         ) : (
           <>
             {job.status === 'confirmed' && (
@@ -201,21 +187,21 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
             )}
 
             {job.status === 'en_route' && (
-              <Pressable style={[styles.primaryBtn, { backgroundColor: Colors.info }]} onPress={() => updateStatus('arrived')}>
+              <Pressable style={[styles.primaryBtn, { backgroundColor: c.info }]} onPress={() => updateStatus('arrived')}>
                 <Ionicons name="pin" size={20} color="#fff" />
                 <Text style={styles.btnText}>Mark as Arrived</Text>
               </Pressable>
             )}
 
             {job.status === 'arrived' && (
-              <Pressable style={[styles.primaryBtn, { backgroundColor: '#F97316' }]} onPress={() => updateStatus('in_progress')}>
+              <Pressable style={[styles.primaryBtn, { backgroundColor: c.statusInProgress }]} onPress={() => updateStatus('in_progress')}>
                 <Ionicons name="construct" size={20} color="#fff" />
                 <Text style={styles.btnText}>Start Job Work</Text>
               </Pressable>
             )}
 
             {job.status === 'in_progress' && (
-              <Pressable style={[styles.primaryBtn, { backgroundColor: Colors.success }]} onPress={() => updateStatus('completed')}>
+              <Pressable style={[styles.primaryBtn, { backgroundColor: c.success }]} onPress={() => updateStatus('completed')}>
                 <Ionicons name="checkmark-circle" size={20} color="#fff" />
                 <Text style={styles.btnText}>Mark Job Completed</Text>
               </Pressable>
@@ -226,12 +212,12 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
                 <Ionicons
                   name={job.status === 'completed' ? 'checkmark-circle' : 'close-circle'}
                   size={24}
-                  color={job.status === 'completed' ? Colors.success : Colors.error}
+                  color={job.status === 'completed' ? c.success : c.error}
                 />
                 <Text
                   style={[
                     styles.completedMessageText,
-                    { color: job.status === 'completed' ? Colors.success : Colors.error },
+                    { color: job.status === 'completed' ? c.success : c.error },
                   ]}
                 >
                   This job is {job.status}.
@@ -245,82 +231,83 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.base,
-  },
-  jobId: { ...Typography.h3, color: Colors.text },
-  badge: { paddingHorizontal: Spacing.base, paddingVertical: 4, borderRadius: Radius.full },
-  badgeText: { ...Typography.caption, fontWeight: '700' },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.background },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.base,
+    },
+    jobId: { ...Typography.h3, color: c.text },
+    badge: { paddingHorizontal: Spacing.base, paddingVertical: 4, borderRadius: Radius.full },
+    badgeText: { ...Typography.caption, fontWeight: '700' },
 
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.base,
-  },
-  sectionTitle: { ...Typography.label, color: Colors.textSecondary, marginBottom: Spacing.base },
-  customerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${Colors.primary}14`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { ...Typography.h4, color: Colors.primary },
-  customerMeta: { flex: 1, gap: 2 },
-  customerName: { ...Typography.bodyLarge, fontWeight: '700', color: Colors.text },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locationText: { ...Typography.body, color: Colors.textSecondary },
-  callBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${Colors.primary}12`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: Spacing.base,
+    },
+    sectionTitle: { ...Typography.label, color: c.textSecondary, marginBottom: Spacing.base },
+    customerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: `${c.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { ...Typography.h4, color: c.primary },
+    customerMeta: { flex: 1, gap: 2 },
+    customerName: { ...Typography.bodyLarge, fontWeight: '700', color: c.text },
+    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    locationText: { ...Typography.body, color: c.textSecondary },
+    callBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: `${c.primary}12`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
-  scheduleVal: { ...Typography.bodyLarge, fontWeight: '700', color: Colors.text },
-  scheduleLbl: { ...Typography.caption, color: Colors.textSecondary },
+    scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
+    scheduleVal: { ...Typography.bodyLarge, fontWeight: '700', color: c.text },
+    scheduleLbl: { ...Typography.caption, color: c.textSecondary },
 
-  descText: { ...Typography.bodyLarge, color: Colors.textSecondary, lineHeight: 22, fontStyle: 'italic' },
+    descText: { ...Typography.bodyLarge, color: c.textSecondary, lineHeight: 22, fontStyle: 'italic' },
 
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLbl: { ...Typography.body, color: Colors.textSecondary },
-  priceVal: { ...Typography.bodyLarge, fontWeight: '600', color: Colors.text },
-  divider: { height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.base },
-  totalLbl: { ...Typography.bodyLarge, fontWeight: '700', color: Colors.text },
-  totalVal: { ...Typography.h3, color: Colors.primary },
+    priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    priceLbl: { ...Typography.body, color: c.textSecondary },
+    priceVal: { ...Typography.bodyLarge, fontWeight: '600', color: c.text },
+    divider: { height: 1, backgroundColor: c.divider, marginVertical: Spacing.base },
+    totalLbl: { ...Typography.bodyLarge, fontWeight: '700', color: c.text },
+    totalVal: { ...Typography.h3, color: c.primary },
 
-  actionContainer: { marginTop: Spacing.base },
-  primaryBtn: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    gap: Spacing.xs,
-  },
-  btnText: { ...Typography.bodyLarge, fontWeight: '700', color: '#fff' },
+    actionContainer: { marginTop: Spacing.base },
+    primaryBtn: {
+      backgroundColor: c.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      gap: Spacing.xs,
+    },
+    btnText: { ...Typography.bodyLarge, fontWeight: '700', color: '#fff' },
 
-  completedMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.base,
-  },
-  completedMessageText: { ...Typography.bodyLarge, fontWeight: '600' },
-});
+    completedMessage: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
+      paddingVertical: Spacing.base,
+    },
+    completedMessageText: { ...Typography.bodyLarge, fontWeight: '600' },
+  });

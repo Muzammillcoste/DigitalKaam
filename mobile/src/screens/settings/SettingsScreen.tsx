@@ -18,13 +18,23 @@ import {
   type Language,
 } from '@/store/settingsStore';
 import { useTranslation } from '@/i18n';
-import { Colors, Typography, Spacing, Radius, Shadow } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  Shadow,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { SettingsScreenProps } from '@/navigation/types';
 
 type SheetKind = 'color' | 'language' | null;
 
 export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
   const { logout } = useAuthStore();
   const { showToast } = useUIStore();
@@ -77,13 +87,11 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
       style={[styles.row, { flexDirection: rowDir }]}
       onPress={onPress}
     >
-      <View
-        style={[styles.rowIcon, danger && styles.rowIconDanger]}
-      >
+      <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>
         <Ionicons
           name={icon}
           size={20}
-          color={danger ? Colors.error : Colors.primary}
+          color={danger ? c.error : c.primary}
         />
       </View>
       <Text
@@ -97,7 +105,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
       </Text>
       {value && <Text style={styles.rowValue}>{value}</Text>}
       {!danger && (
-        <Ionicons name={chevron} size={16} color={Colors.textDisabled} />
+        <Ionicons name={chevron} size={16} color={c.textDisabled} />
       )}
     </Pressable>
   );
@@ -150,7 +158,6 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
         <Text style={styles.version}>{t('common.version')}</Text>
       </ScrollView>
 
-      {/* Selection bottom-sheet */}
       <Modal
         visible={sheet !== null}
         transparent
@@ -189,7 +196,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
                     {colorModeLabel[opt]}
                   </Text>
                   {colorMode === opt && (
-                    <Ionicons name="checkmark" size={20} color={Colors.primary} />
+                    <Ionicons name="checkmark" size={20} color={c.primary} />
                   )}
                 </Pressable>
               ))}
@@ -214,7 +221,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
                     {languageLabel[opt]}
                   </Text>
                   {language === opt && (
-                    <Ionicons name="checkmark" size={20} color={Colors.primary} />
+                    <Ionicons name="checkmark" size={20} color={c.primary} />
                   )}
                 </Pressable>
               ))}
@@ -225,69 +232,70 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  group: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-  },
-  groupSpaced: { marginTop: Spacing.base },
-  row: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.base,
-    gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
-    backgroundColor: `${Colors.primary}14`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowIconDanger: { backgroundColor: Colors.errorLight },
-  rowLabel: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
-  rowLabelDanger: { color: Colors.error },
-  rowValue: { ...Typography.body, color: Colors.textSecondary },
-  version: {
-    ...Typography.caption,
-    color: Colors.textDisabled,
-    textAlign: 'center',
-    marginTop: Spacing.xl,
-  },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    group: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.xl,
+      overflow: 'hidden',
+    },
+    groupSpaced: { marginTop: Spacing.base },
+    row: {
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.base,
+      gap: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+    },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.md,
+      backgroundColor: `${c.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowIconDanger: { backgroundColor: c.errorLight },
+    rowLabel: { ...Typography.bodyLarge, color: c.text, flex: 1 },
+    rowLabelDanger: { color: c.error },
+    rowValue: { ...Typography.body, color: c.textSecondary },
+    version: {
+      ...Typography.caption,
+      color: c.textDisabled,
+      textAlign: 'center',
+      marginTop: Spacing.xl,
+    },
 
-  backdrop: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    ...Shadow.lg,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.border,
-    marginBottom: Spacing.base,
-  },
-  sheetTitle: { ...Typography.h4, color: Colors.text, marginBottom: Spacing.sm },
-  option: {
-    alignItems: 'center',
-    paddingVertical: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  optionText: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
-  optionTextSelected: { color: Colors.primary, fontWeight: '600' },
-});
+    backdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      paddingTop: Spacing.sm,
+      paddingHorizontal: Spacing.base,
+      ...Shadow.lg,
+    },
+    handle: {
+      alignSelf: 'center',
+      width: 40,
+      height: 4,
+      borderRadius: Radius.full,
+      backgroundColor: c.border,
+      marginBottom: Spacing.base,
+    },
+    sheetTitle: { ...Typography.h4, color: c.text, marginBottom: Spacing.sm },
+    option: {
+      alignItems: 'center',
+      paddingVertical: Spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+    },
+    optionText: { ...Typography.bodyLarge, color: c.text, flex: 1 },
+    optionTextSelected: { color: c.primary, fontWeight: '600' },
+  });

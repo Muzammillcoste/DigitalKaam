@@ -7,11 +7,12 @@ import { useUIStore } from '@/store/uiStore';
 import { useTranslation, useLocalizedInputProps } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors, Spacing } from '@/theme';
+import { Spacing, useThemedStyles, type ColorPalette } from '@/theme';
 import type { ProfileScreenProps } from '@/navigation/types';
 
 export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfile'>) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useTranslation();
   const langInput = useLocalizedInputProps();
   const { userId, profile, setProfile, providerProfile, setProviderProfile } = useAuthStore();
@@ -103,7 +104,8 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.xl, gap: 4 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    content: { padding: Spacing.xl, gap: 4 },
+  });

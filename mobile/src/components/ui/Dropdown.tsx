@@ -9,7 +9,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius, Shadow } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  Shadow,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import { useTranslation } from '@/i18n';
 
 export interface DropdownOption {
@@ -41,6 +49,8 @@ export function Dropdown({
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { isRTL } = useTranslation();
 
   const selected = options.find((o) => o.value === value);
@@ -73,7 +83,7 @@ export function Dropdown({
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={18}
-          color={Colors.textSecondary}
+          color={c.textSecondary}
         />
       </Pressable>
 
@@ -88,7 +98,6 @@ export function Dropdown({
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable
             style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.base }]}
-            // Swallow taps so pressing the sheet doesn't close it.
             onPress={() => {}}
           >
             <View style={styles.handle} />
@@ -119,11 +128,7 @@ export function Dropdown({
                       {item.label}
                     </Text>
                     {isSelected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={20}
-                        color={Colors.primary}
-                      />
+                      <Ionicons name="checkmark" size={20} color={c.primary} />
                     )}
                   </Pressable>
                 );
@@ -136,61 +141,62 @@ export function Dropdown({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: Spacing.base },
-  label: { ...Typography.label, color: Colors.text, marginBottom: Spacing.xs },
-  field: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
-  },
-  fieldOpen: { borderColor: Colors.primary },
-  fieldError: { borderColor: Colors.error },
-  fieldText: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
-  placeholder: { color: Colors.textDisabled },
-  errorText: { ...Typography.caption, color: Colors.error, marginTop: Spacing.xs },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    wrapper: { marginBottom: Spacing.base },
+    label: { ...Typography.label, color: c.text, marginBottom: Spacing.xs },
+    field: {
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.surface,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      gap: Spacing.sm,
+    },
+    fieldOpen: { borderColor: c.primary },
+    fieldError: { borderColor: c.error },
+    fieldText: { ...Typography.bodyLarge, color: c.text, flex: 1 },
+    placeholder: { color: c.textDisabled },
+    errorText: { ...Typography.caption, color: c.error, marginTop: Spacing.xs },
 
-  backdrop: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    maxHeight: '70%',
-    ...Shadow.lg,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.border,
-    marginBottom: Spacing.base,
-  },
-  sheetTitle: {
-    ...Typography.h4,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-  },
-  list: { flexGrow: 0 },
-  option: {
-    alignItems: 'center',
-    paddingVertical: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-    gap: Spacing.sm,
-  },
-  optionText: { ...Typography.bodyLarge, color: Colors.text },
-  optionTextSelected: { color: Colors.primary, fontWeight: '600' },
-});
+    backdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      paddingTop: Spacing.sm,
+      paddingHorizontal: Spacing.base,
+      maxHeight: '70%',
+      ...Shadow.lg,
+    },
+    handle: {
+      alignSelf: 'center',
+      width: 40,
+      height: 4,
+      borderRadius: Radius.full,
+      backgroundColor: c.border,
+      marginBottom: Spacing.base,
+    },
+    sheetTitle: {
+      ...Typography.h4,
+      color: c.text,
+      marginBottom: Spacing.sm,
+    },
+    list: { flexGrow: 0 },
+    option: {
+      alignItems: 'center',
+      paddingVertical: Spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+      gap: Spacing.sm,
+    },
+    optionText: { ...Typography.bodyLarge, color: c.text },
+    optionTextSelected: { color: c.primary, fontWeight: '600' },
+  });

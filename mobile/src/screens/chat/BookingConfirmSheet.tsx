@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, useThemedStyles, type ColorPalette } from '@/theme';
 import { Button } from '@/components/ui/Button';
 import type { ChatScreenProps } from '@/navigation/types';
 
 export function BookingConfirmSheet({ route, navigation }: ChatScreenProps<'BookingConfirm'>) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
   const { bookingData } = route.params;
 
   return (
@@ -18,7 +19,7 @@ export function BookingConfirmSheet({ route, navigation }: ChatScreenProps<'Book
         {Object.entries(bookingData).map(([key, value]) => (
           <View key={key} style={styles.row}>
             <Text style={styles.key}>
-              {key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              {key.replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase())}
             </Text>
             <Text style={styles.value}>{String(value)}</Text>
           </View>
@@ -44,34 +45,35 @@ export function BookingConfirmSheet({ route, navigation }: ChatScreenProps<'Book
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginBottom: Spacing.base,
-  },
-  title: { ...Typography.h3, color: Colors.text, marginBottom: Spacing.base },
-  scroll: { flex: 1 },
-  content: { gap: Spacing.sm, paddingBottom: Spacing.base },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  key: { ...Typography.body, color: Colors.textSecondary, flex: 1 },
-  value: { ...Typography.body, color: Colors.text, fontWeight: '600', flex: 2, textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.base },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: Spacing.xl,
+      paddingTop: Spacing.md,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: 'center',
+      marginBottom: Spacing.base,
+    },
+    title: { ...Typography.h3, color: c.text, marginBottom: Spacing.base },
+    scroll: { flex: 1 },
+    content: { gap: Spacing.sm, paddingBottom: Spacing.base },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+    },
+    key: { ...Typography.body, color: c.textSecondary, flex: 1 },
+    value: { ...Typography.body, color: c.text, fontWeight: '600', flex: 2, textAlign: 'right' },
+    actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.base },
+  });

@@ -7,7 +7,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, Radius, useColors, useThemedStyles, type ColorPalette } from '@/theme';
 import { useTranslation, useLocalizedInputProps } from '@/i18n';
 
 interface PillInputProps {
@@ -24,6 +24,8 @@ interface PillInputProps {
  */
 export function PillInput({ label, value, onChange, placeholder }: PillInputProps) {
   const [text, setText] = useState('');
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { isRTL } = useTranslation();
   const langInput = useLocalizedInputProps();
 
@@ -53,7 +55,7 @@ export function PillInput({ label, value, onChange, placeholder }: PillInputProp
         <TextInput
           style={[styles.input, { textAlign: align }]}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textDisabled}
+          placeholderTextColor={c.textDisabled}
           value={text}
           onChangeText={setText}
           onSubmitEditing={addPill}
@@ -68,7 +70,7 @@ export function PillInput({ label, value, onChange, placeholder }: PillInputProp
           disabled={!text.trim()}
           hitSlop={6}
         >
-          <Ionicons name="add" size={22} color={Colors.textInverse} />
+          <Ionicons name="add" size={22} color={c.textInverse} />
         </Pressable>
       </View>
 
@@ -85,7 +87,7 @@ export function PillInput({ label, value, onChange, placeholder }: PillInputProp
                 hitSlop={8}
                 style={styles.pillRemove}
               >
-                <Ionicons name="close" size={14} color={Colors.primary} />
+                <Ionicons name="close" size={14} color={c.primary} />
               </Pressable>
             </View>
           ))}
@@ -95,55 +97,56 @@ export function PillInput({ label, value, onChange, placeholder }: PillInputProp
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: Spacing.base },
-  label: { ...Typography.label, color: Colors.text, marginBottom: Spacing.xs },
-  inputRow: {
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingLeft: Spacing.base,
-    paddingRight: Spacing.xs,
-    paddingVertical: Spacing.xs,
-    gap: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    ...Typography.bodyLarge,
-    color: Colors.text,
-    paddingVertical: Spacing.sm,
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnDisabled: { backgroundColor: Colors.textDisabled },
-  pills: {
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-  },
-  pill: {
-    alignItems: 'center',
-    backgroundColor: `${Colors.primary}14`,
-    borderRadius: Radius.full,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
-  },
-  pillText: { ...Typography.body, color: Colors.primary, fontWeight: '600' },
-  pillRemove: {
-    width: 18,
-    height: 18,
-    borderRadius: Radius.full,
-    backgroundColor: `${Colors.primary}22`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    wrapper: { marginBottom: Spacing.base },
+    label: { ...Typography.label, color: c.text, marginBottom: Spacing.xs },
+    inputRow: {
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: Radius.lg,
+      paddingLeft: Spacing.base,
+      paddingRight: Spacing.xs,
+      paddingVertical: Spacing.xs,
+      gap: Spacing.sm,
+    },
+    input: {
+      flex: 1,
+      ...Typography.bodyLarge,
+      color: c.text,
+      paddingVertical: Spacing.sm,
+    },
+    addBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.md,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addBtnDisabled: { backgroundColor: c.textDisabled },
+    pills: {
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+      marginTop: Spacing.sm,
+    },
+    pill: {
+      alignItems: 'center',
+      backgroundColor: `${c.primary}14`,
+      borderRadius: Radius.full,
+      paddingVertical: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.xs,
+    },
+    pillText: { ...Typography.body, color: c.primary, fontWeight: '600' },
+    pillRemove: {
+      width: 18,
+      height: 18,
+      borderRadius: Radius.full,
+      backgroundColor: `${c.primary}22`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

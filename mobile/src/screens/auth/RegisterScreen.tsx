@@ -10,15 +10,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
+import { authApi } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors, Typography, Spacing } from '@/theme';
+import { Typography, Spacing, useThemedStyles, type ColorPalette } from '@/theme';
 import type { AuthScreenProps } from '@/navigation/types';
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
   const { setSession } = useAuthStore();
   const { showToast } = useUIStore();
 
@@ -42,7 +44,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
     if (!form.password) e.password = 'Password is required';
-    else if (form.password.length < 6) e.password = 'Min 6 characters';
+    else if (form.password.length < 8) e.password = 'Min 8 characters';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -51,45 +53,38 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
+      // Create the account via the backend (POST /api/auth/signup) — this
+      // also creates the user_profiles row server-side.
+      const res = await authApi.signup({
+        email: form.email.trim(),
         password: form.password,
-        options: {
-          data: {
-            full_name: form.full_name,
-            phone: form.phone,
-            home_area: form.home_area,
-          },
-        },
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim() || undefined,
+        home_area: form.home_area.trim() || undefined,
       });
 
-      if (error) {
-        showToast(error.message, 'error');
-        return;
-      }
-
-      if (!data.user) {
-        showToast('Registration failed. Please try again.', 'error');
-        return;
-      }
-
-      // Create user profile record
-      await supabase.from('user_profiles').upsert({
-        id: data.user.id,
-        full_name: form.full_name,
-        phone: form.phone,
-        email: form.email,
-        home_area: form.home_area || null,
-      });
-
-      if (data.session) {
-        setSession(data.user.id, data.session.access_token);
+      if (res.access_token && res.refresh_token) {
+        const { error } = await supabase.auth.setSession({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+        });
+        if (error) {
+          showToast(error.message, 'error');
+          return;
+        }
+        setSession(res.userId, res.access_token);
       } else {
-        showToast('Account created! Please check your email to confirm.', 'success');
+        showToast('Account created! Please sign in.', 'success');
         navigation.navigate('Login');
       }
     } catch (err: any) {
-      showToast(err.message ?? 'Registration failed.', 'error');
+      const msg = String(err?.message ?? '');
+      showToast(
+        /already|exists|registered/i.test(msg)
+          ? 'An account with this email already exists'
+          : 'Registration failed. Please try again.',
+        'error',
+      );
     } finally {
       setLoading(false);
     }
@@ -139,7 +134,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
           />
           <Input
             label="Password"
-            placeholder="Min 6 characters"
+            placeholder="Min 8 characters"
             value={form.password}
             onChangeText={set('password')}
             error={errors.password}
@@ -166,21 +161,22 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.xl,
-  },
-  header: { marginBottom: Spacing['2xl'] },
-  title: { ...Typography.h2, color: Colors.text, marginBottom: 4 },
-  subtitle: { ...Typography.body, color: Colors.textSecondary },
-  form: { gap: 4 },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-  },
-  footerText: { ...Typography.body, color: Colors.textSecondary },
-  link: { ...Typography.body, color: Colors.primary, fontWeight: '600' },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      backgroundColor: c.background,
+      paddingHorizontal: Spacing.xl,
+    },
+    header: { marginBottom: Spacing['2xl'] },
+    title: { ...Typography.h2, color: c.text, marginBottom: 4 },
+    subtitle: { ...Typography.body, color: c.textSecondary },
+    form: { gap: 4 },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: Spacing.xl,
+    },
+    footerText: { ...Typography.body, color: c.textSecondary },
+    link: { ...Typography.body, color: c.primary, fontWeight: '600' },
+  });

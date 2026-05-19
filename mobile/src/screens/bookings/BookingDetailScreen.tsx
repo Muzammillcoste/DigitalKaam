@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -11,13 +10,18 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { StatusTimeline } from '@/components/booking/StatusTimeline';
 import { PriceBreakdown } from '@/components/booking/PriceBreakdown';
-import { Colors, Typography, Spacing } from '@/theme';
-import { formatDate, formatDateTime } from '@/utils/format';
+import {
+  Typography,
+  Spacing,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
+import { formatDate } from '@/utils/format';
 import type { BookingsScreenProps } from '@/navigation/types';
 
 export function BookingDetailScreen({ route, navigation }: BookingsScreenProps<'BookingDetail'>) {
   const { bookingId } = route.params;
-  const { userId } = useAuthStore();
+  const styles = useThemedStyles(makeStyles);
   const { showToast } = useUIStore();
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +40,6 @@ export function BookingDetailScreen({ route, navigation }: BookingsScreenProps<'
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Provider header */}
       <Card style={styles.providerCard}>
         <View style={styles.providerRow}>
           <Avatar name={booking.provider?.name ?? 'Provider'} size={56} />
@@ -51,14 +54,12 @@ export function BookingDetailScreen({ route, navigation }: BookingsScreenProps<'
         </View>
       </Card>
 
-      {/* Request */}
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Service Request</Text>
         <Text style={styles.request}>{booking.user_request}</Text>
         <Text style={styles.meta}>Booked on {formatDate(booking.created_at)}</Text>
       </Card>
 
-      {/* Status Timeline */}
       {isActive && (
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Status</Text>
@@ -66,12 +67,10 @@ export function BookingDetailScreen({ route, navigation }: BookingsScreenProps<'
         </Card>
       )}
 
-      {/* Price */}
       <Card style={styles.section} padding={0}>
         <PriceBreakdown total={booking.price} />
       </Card>
 
-      {/* Actions */}
       <View style={styles.actions}>
         {isActive && (
           <Button
@@ -103,18 +102,19 @@ export function BookingDetailScreen({ route, navigation }: BookingsScreenProps<'
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, gap: Spacing.sm, paddingBottom: Spacing['3xl'] },
-  providerCard: { marginBottom: 0 },
-  providerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  providerInfo: { flex: 1 },
-  providerName: { ...Typography.h4, color: Colors.text },
-  serviceType: { ...Typography.bodySmall, color: Colors.primary, fontWeight: '600' },
-  phone: { ...Typography.caption, color: Colors.textSecondary, marginTop: 2 },
-  section: {},
-  sectionTitle: { ...Typography.label, color: Colors.textSecondary, marginBottom: Spacing.sm },
-  request: { ...Typography.bodyLarge, color: Colors.text },
-  meta: { ...Typography.caption, color: Colors.textDisabled, marginTop: Spacing.xs },
-  actions: { gap: Spacing.sm, marginTop: Spacing.sm },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    content: { padding: Spacing.base, gap: Spacing.sm, paddingBottom: Spacing['3xl'] },
+    providerCard: { marginBottom: 0 },
+    providerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    providerInfo: { flex: 1 },
+    providerName: { ...Typography.h4, color: c.text },
+    serviceType: { ...Typography.bodySmall, color: c.primary, fontWeight: '600' },
+    phone: { ...Typography.caption, color: c.textSecondary, marginTop: 2 },
+    section: {},
+    sectionTitle: { ...Typography.label, color: c.textSecondary, marginBottom: Spacing.sm },
+    request: { ...Typography.bodyLarge, color: c.text },
+    meta: { ...Typography.caption, color: c.textDisabled, marginTop: Spacing.xs },
+    actions: { gap: Spacing.sm, marginTop: Spacing.sm },
+  });

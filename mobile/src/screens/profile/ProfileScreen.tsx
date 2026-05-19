@@ -8,7 +8,14 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useTranslation } from '@/i18n';
 import { Avatar } from '@/components/ui/Avatar';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { ProfileScreenProps } from '@/navigation/types';
 
 interface MenuItem {
@@ -19,6 +26,8 @@ interface MenuItem {
 
 export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
   const {
     userId,
@@ -40,34 +49,33 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
   }, [userId]);
 
   // Legacy "Notifications", "Privacy & Security" and "Help & Support" rows
-  // were intentionally removed — settings now live in the Settings screen.
+  // were intentionally removed — settings now live in the Settings screen,
+  // and "Become a Provider" moved to the sidebar ("Start Earning").
   const menuItems: MenuItem[] = [
     {
       icon: 'person-outline',
       label: t('profile.editProfile'),
       onPress: () => navigation.navigate('EditProfile'),
     },
-    providerProfile
-      ? {
-          icon: 'swap-horizontal-outline',
-          label: isProviderMode
-            ? t('profile.switchToCustomer')
-            : t('profile.switchToProvider'),
-          onPress: () => {
-            toggleProviderMode();
-            showToast(
-              isProviderMode
-                ? t('profile.switchedToCustomer')
-                : t('profile.switchedToProvider'),
-              'success',
-            );
+    ...(providerProfile
+      ? [
+          {
+            icon: 'swap-horizontal-outline' as const,
+            label: isProviderMode
+              ? t('profile.switchToCustomer')
+              : t('profile.switchToProvider'),
+            onPress: () => {
+              toggleProviderMode();
+              showToast(
+                isProviderMode
+                  ? t('profile.switchedToCustomer')
+                  : t('profile.switchedToProvider'),
+                'success',
+              );
+            },
           },
-        }
-      : {
-          icon: 'briefcase-outline',
-          label: t('profile.becomeProvider'),
-          onPress: () => navigation.navigate('BecomeProvider'),
-        },
+        ]
+      : []),
   ];
 
   const align = isRTL ? 'right' : 'left';
@@ -80,7 +88,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
       contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['2xl'] }}
     >
       <LinearGradient
-        colors={[Colors.primary, Colors.primaryDark]}
+        colors={[c.primary, c.primaryDark]}
         style={[styles.header, { paddingTop: insets.top + Spacing.base }]}
       >
         <Avatar
@@ -112,12 +120,12 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
             onPress={item.onPress}
           >
             <View style={styles.menuIcon}>
-              <Ionicons name={item.icon} size={20} color={Colors.primary} />
+              <Ionicons name={item.icon} size={20} color={c.primary} />
             </View>
             <Text style={[styles.menuLabel, { textAlign: align }]}>
               {item.label}
             </Text>
-            <Ionicons name={chevron} size={16} color={Colors.textDisabled} />
+            <Ionicons name={chevron} size={16} color={c.textDisabled} />
           </Pressable>
         ))}
       </View>
@@ -125,39 +133,40 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    alignItems: 'center',
-    paddingBottom: Spacing['2xl'],
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xs,
-  },
-  name: { ...Typography.h3, color: '#fff', marginTop: Spacing.sm },
-  email: { ...Typography.body, color: 'rgba(255,255,255,0.8)' },
-  areaRow: { alignItems: 'center', gap: 4 },
-  area: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
-  menu: {
-    margin: Spacing.base,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.base,
-    gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: `${Colors.primary}14`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuLabel: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    header: {
+      alignItems: 'center',
+      paddingBottom: Spacing['2xl'],
+      paddingHorizontal: Spacing.xl,
+      gap: Spacing.xs,
+    },
+    name: { ...Typography.h3, color: '#fff', marginTop: Spacing.sm },
+    email: { ...Typography.body, color: 'rgba(255,255,255,0.8)' },
+    areaRow: { alignItems: 'center', gap: 4 },
+    area: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
+    menu: {
+      margin: Spacing.base,
+      backgroundColor: c.surface,
+      borderRadius: Radius.xl,
+      overflow: 'hidden',
+    },
+    menuItem: {
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.base,
+      gap: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+    },
+    menuIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: `${c.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuLabel: { ...Typography.bodyLarge, color: c.text, flex: 1 },
+  });

@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/theme';
+import { useColors, type ColorPalette } from '@/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/i18n';
 import type {
@@ -38,12 +38,12 @@ const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const ProviderTab = createBottomTabNavigator<ProviderTabParamList>();
 const ProviderStack = createNativeStackNavigator<any>();
 
-const stackHeader = {
-  headerStyle: { backgroundColor: Colors.surface },
-  headerTintColor: Colors.text,
+const headerOptions = (c: ColorPalette) => ({
+  headerStyle: { backgroundColor: c.surface },
+  headerTintColor: c.text,
   headerShadowVisible: false,
   headerTitleStyle: { fontWeight: '600' as const },
-};
+});
 
 // ── Chat (the only thing on the main screen) ──────────────────
 function ChatStackNavigator() {
@@ -62,8 +62,9 @@ function ChatStackNavigator() {
 // ── Bookings ──────────────────────────────────────────────────
 function BookingsNavigator() {
   const { t } = useTranslation();
+  const c = useColors();
   return (
-    <BookingsStack.Navigator screenOptions={stackHeader}>
+    <BookingsStack.Navigator screenOptions={headerOptions(c)}>
       <BookingsStack.Screen
         name="BookingsList"
         component={BookingsListScreen}
@@ -94,8 +95,9 @@ function BookingsNavigator() {
 // ── Settings (Profile now nested here) ────────────────────────
 function SettingsNavigator({ withMenu = true }: { withMenu?: boolean }) {
   const { t } = useTranslation();
+  const c = useColors();
   return (
-    <SettingsStack.Navigator screenOptions={stackHeader}>
+    <SettingsStack.Navigator screenOptions={headerOptions(c)}>
       <SettingsStack.Screen
         name="Settings"
         component={SettingsScreen}
@@ -117,7 +119,7 @@ function SettingsNavigator({ withMenu = true }: { withMenu?: boolean }) {
       <SettingsStack.Screen
         name="BecomeProvider"
         component={BecomeProviderScreen}
-        options={{ title: t('profile.becomeProvider') }}
+        options={{ title: t('drawer.startEarning') }}
       />
       <SettingsStack.Screen
         name="Permissions"
@@ -135,6 +137,7 @@ function SettingsNavigator({ withMenu = true }: { withMenu?: boolean }) {
 
 // ── Customer experience: Claude-style drawer ──────────────────
 function CustomerDrawer() {
+  const c = useColors();
   const width = Math.min(Dimensions.get('window').width * 0.86, 360);
   return (
     <Drawer.Navigator
@@ -142,8 +145,8 @@ function CustomerDrawer() {
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
-        drawerStyle: { width, backgroundColor: Colors.surface },
-        sceneStyle: { backgroundColor: Colors.background },
+        drawerStyle: { width, backgroundColor: c.surface },
+        sceneStyle: { backgroundColor: c.background },
         swipeEdgeWidth: 60,
       }}
     >
@@ -156,8 +159,9 @@ function CustomerDrawer() {
 
 // ── Provider experience (unchanged structure, Settings reused) ─
 function ProviderJobsStack() {
+  const c = useColors();
   return (
-    <ProviderStack.Navigator screenOptions={stackHeader}>
+    <ProviderStack.Navigator screenOptions={headerOptions(c)}>
       <ProviderStack.Screen
         name="ProviderDashboard"
         component={ProviderDashboardScreen}
@@ -174,15 +178,16 @@ function ProviderJobsStack() {
 
 export function ProviderNavigator() {
   const { t } = useTranslation();
+  const c = useColors();
   return (
     <ProviderTab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textDisabled,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.textDisabled,
         tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.border,
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
           borderTopWidth: 1,
           paddingBottom: 4,
           height: 60,

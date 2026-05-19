@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBookingStore, type Booking } from '@/store/bookingStore';
+import { useBookingStore } from '@/store/bookingStore';
 import { useAuthStore } from '@/store/authStore';
 import { BookingCard } from '@/components/booking/BookingCard';
 import { Spinner } from '@/components/ui/Spinner';
-import { Colors, Typography, Spacing } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { BookingsScreenProps } from '@/navigation/types';
 
 const TABS = [
@@ -16,6 +22,8 @@ const TABS = [
 
 export function BookingsListScreen({ navigation }: BookingsScreenProps<'BookingsList'>) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuthStore();
   const { bookings, isLoading, fetchBookings, refresh } = useBookingStore();
   const [activeTab, setActiveTab] = useState(0);
@@ -39,7 +47,6 @@ export function BookingsListScreen({ navigation }: BookingsScreenProps<'Bookings
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Tab bar */}
       <View style={styles.tabs}>
         {TABS.map((tab, i) => (
           <Pressable key={tab.label} style={styles.tab} onPress={() => setActiveTab(i)}>
@@ -62,7 +69,7 @@ export function BookingsListScreen({ navigation }: BookingsScreenProps<'Bookings
         )}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.primary} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -74,31 +81,32 @@ export function BookingsListScreen({ navigation }: BookingsScreenProps<'Bookings
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-  },
-  tabLabel: { ...Typography.button, color: Colors.textSecondary },
-  tabLabelActive: { color: Colors.primary },
-  tabUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 12,
-    right: 12,
-    height: 2,
-    backgroundColor: Colors.primary,
-    borderRadius: 1,
-  },
-  list: { padding: Spacing.base, gap: Spacing.sm },
-  empty: { alignItems: 'center', marginTop: Spacing['3xl'] },
-  emptyText: { ...Typography.body, color: Colors.textDisabled },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    tabs: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+    },
+    tabLabel: { ...Typography.button, color: c.textSecondary },
+    tabLabelActive: { color: c.primary },
+    tabUnderline: {
+      position: 'absolute',
+      bottom: 0,
+      left: 12,
+      right: 12,
+      height: 2,
+      backgroundColor: c.primary,
+      borderRadius: 1,
+    },
+    list: { padding: Spacing.base, gap: Spacing.sm },
+    empty: { alignItems: 'center', marginTop: Spacing['3xl'] },
+    emptyText: { ...Typography.body, color: c.textDisabled },
+  });

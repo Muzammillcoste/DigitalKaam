@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { Colors, Typography, Radius } from '@/theme';
+import { Typography, Radius, useColors, useThemedStyles, type ColorPalette } from '@/theme';
 import { initials } from '@/utils/format';
 
 interface AvatarProps {
@@ -10,7 +10,9 @@ interface AvatarProps {
   bgColor?: string;
 }
 
-export function Avatar({ name, imageUri, size = 44, bgColor = Colors.primary }: AvatarProps) {
+export function Avatar({ name, imageUri, size = 44, bgColor }: AvatarProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const radius = size / 2;
 
   if (imageUri) {
@@ -26,7 +28,12 @@ export function Avatar({ name, imageUri, size = 44, bgColor = Colors.primary }: 
     <View
       style={[
         styles.fallback,
-        { width: size, height: size, borderRadius: radius, backgroundColor: bgColor },
+        {
+          width: size,
+          height: size,
+          borderRadius: radius,
+          backgroundColor: bgColor ?? c.primary,
+        },
       ]}
     >
       <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials(name)}</Text>
@@ -34,8 +41,9 @@ export function Avatar({ name, imageUri, size = 44, bgColor = Colors.primary }: 
   );
 }
 
-const styles = StyleSheet.create({
-  image: { backgroundColor: Colors.border },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
-  text: { color: Colors.textInverse, fontWeight: '700' },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    image: { backgroundColor: c.border },
+    fallback: { alignItems: 'center', justifyContent: 'center' },
+    text: { color: c.textInverse, fontWeight: '700' },
+  });

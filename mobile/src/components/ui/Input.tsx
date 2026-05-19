@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, Radius, useColors, useThemedStyles, type ColorPalette } from '@/theme';
 
 interface InputProps {
   label?: string;
@@ -39,6 +39,8 @@ export function Input({
   textAlign,
   writingDirection,
 }: InputProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -62,7 +64,7 @@ export function Input({
             !!writingDirection && { writingDirection },
           ]}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textDisabled}
+          placeholderTextColor={c.textDisabled}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry && !showPassword}
@@ -81,7 +83,7 @@ export function Input({
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={Colors.textSecondary}
+              color={c.textSecondary}
             />
           </Pressable>
         )}
@@ -91,29 +93,30 @@ export function Input({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: Spacing.base },
-  label: { ...Typography.label, color: Colors.text, marginBottom: Spacing.xs },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.base,
-  },
-  multilineWrap: { alignItems: 'flex-start', paddingVertical: Spacing.sm },
-  focused: { borderColor: Colors.primary },
-  errored: { borderColor: Colors.error },
-  disabled: { backgroundColor: Colors.background, opacity: 0.7 },
-  input: {
-    flex: 1,
-    ...Typography.bodyLarge,
-    color: Colors.text,
-    paddingVertical: Spacing.md,
-  },
-  multilineInput: { minHeight: 80 },
-  eyeBtn: { padding: Spacing.xs },
-  errorText: { ...Typography.caption, color: Colors.error, marginTop: Spacing.xs },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    wrapper: { marginBottom: Spacing.base },
+    label: { ...Typography.label, color: c.text, marginBottom: Spacing.xs },
+    inputWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.base,
+    },
+    multilineWrap: { alignItems: 'flex-start', paddingVertical: Spacing.sm },
+    focused: { borderColor: c.primary },
+    errored: { borderColor: c.error },
+    disabled: { backgroundColor: c.background, opacity: 0.7 },
+    input: {
+      flex: 1,
+      ...Typography.bodyLarge,
+      color: c.text,
+      paddingVertical: Spacing.md,
+    },
+    multilineInput: { minHeight: 80 },
+    eyeBtn: { padding: Spacing.xs },
+    errorText: { ...Typography.caption, color: c.error, marginTop: Spacing.xs },
+  });

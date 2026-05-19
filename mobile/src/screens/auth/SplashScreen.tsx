@@ -2,11 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography } from '@/theme';
+import { Typography, useColors } from '@/theme';
 import type { AuthScreenProps } from '@/navigation/types';
 
 export function SplashScreen({ navigation }: AuthScreenProps<'Splash'>) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
   const logoScale = useRef(new Animated.Value(0.6)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
@@ -27,7 +28,7 @@ export function SplashScreen({ navigation }: AuthScreenProps<'Splash'>) {
 
   return (
     <LinearGradient
-      colors={[Colors.primaryDark, Colors.primary, Colors.primaryLight]}
+      colors={[c.primaryDark, c.primary, c.primaryLight]}
       style={[styles.container, { paddingBottom: insets.bottom }]}
       start={{ x: 0.2, y: 0 }}
       end={{ x: 0.8, y: 1 }}

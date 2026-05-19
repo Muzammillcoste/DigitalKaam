@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/theme';
+import { useColors } from '@/theme';
 
 interface StarRatingProps {
   rating: number;
@@ -10,6 +10,7 @@ interface StarRatingProps {
 }
 
 export function StarRating({ rating, maxStars = 5, size = 16 }: StarRatingProps) {
+  const c = useColors();
   return (
     <View style={styles.row}>
       {Array.from({ length: maxStars }, (_, i) => {
@@ -20,7 +21,7 @@ export function StarRating({ rating, maxStars = 5, size = 16 }: StarRatingProps)
             key={i}
             name={filled ? 'star' : half ? 'star-half' : 'star-outline'}
             size={size}
-            color={Colors.accent}
+            color={c.accent}
           />
         );
       })}

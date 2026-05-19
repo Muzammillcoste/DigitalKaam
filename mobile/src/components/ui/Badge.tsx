@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, Radius, useThemedStyles, type ColorPalette } from '@/theme';
 import { formatStatus, statusColor } from '@/utils/format';
 
 interface BadgeProps {
@@ -9,6 +9,7 @@ interface BadgeProps {
 }
 
 export function Badge({ status, size = 'md' }: BadgeProps) {
+  const styles = useThemedStyles(makeStyles);
   const color = statusColor(status);
 
   return (
@@ -21,18 +22,19 @@ export function Badge({ status, size = 'md' }: BadgeProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    gap: Spacing.xs,
-  },
-  badgeSm: { paddingHorizontal: Spacing.xs + 2, paddingVertical: 2 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  label: { ...Typography.label, fontSize: 12 },
-  labelSm: { fontSize: 10 },
-});
+const makeStyles = (_c: ColorPalette) =>
+  StyleSheet.create({
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      borderRadius: Radius.full,
+      gap: Spacing.xs,
+    },
+    badgeSm: { paddingHorizontal: Spacing.xs + 2, paddingVertical: 2 },
+    dot: { width: 6, height: 6, borderRadius: 3 },
+    label: { ...Typography.label, fontSize: 12 },
+    labelSm: { fontSize: 10 },
+  });

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, View, Animated } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import { Typography, Spacing, Radius, useColors, useThemedStyles, type ColorPalette } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -28,6 +28,8 @@ export function Button({
   icon,
   style,
 }: ButtonProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
   const isDisabled = disabled || loading;
 
@@ -53,7 +55,7 @@ export function Button({
         {loading ? (
           <ActivityIndicator
             size="small"
-            color={variant === 'primary' ? Colors.textInverse : Colors.primary}
+            color={variant === 'primary' ? c.textInverse : c.primary}
           />
         ) : (
           <View style={styles.row}>
@@ -68,39 +70,40 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  fullWidth: { width: '100%' },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  iconWrap: { marginRight: Spacing.sm },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    fullWidth: { width: '100%' },
+    row: { flexDirection: 'row', alignItems: 'center' },
+    iconWrap: { marginRight: Spacing.sm },
 
-  base: {
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    base: {
+      borderRadius: Radius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  primary: { backgroundColor: Colors.primary },
-  secondary: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: Colors.error },
+    primary: { backgroundColor: c.primary },
+    secondary: {
+      backgroundColor: c.surface,
+      borderWidth: 1.5,
+      borderColor: c.border,
+    },
+    ghost: { backgroundColor: 'transparent' },
+    danger: { backgroundColor: c.error },
 
-  size_sm: { paddingVertical: Spacing.xs + 2, paddingHorizontal: Spacing.md },
-  size_md: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl },
-  size_lg: { paddingVertical: Spacing.base, paddingHorizontal: Spacing['2xl'] },
+    size_sm: { paddingVertical: Spacing.xs + 2, paddingHorizontal: Spacing.md },
+    size_md: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl },
+    size_lg: { paddingVertical: Spacing.base, paddingHorizontal: Spacing['2xl'] },
 
-  label: { ...Typography.button, textAlign: 'center' },
-  label_primary: { color: Colors.textInverse },
-  label_secondary: { color: Colors.text },
-  label_ghost: { color: Colors.primary },
-  label_danger: { color: Colors.textInverse },
+    label: { ...Typography.button, textAlign: 'center' },
+    label_primary: { color: c.textInverse },
+    label_secondary: { color: c.text },
+    label_ghost: { color: c.primary },
+    label_danger: { color: c.textInverse },
 
-  labelSize_sm: { ...Typography.buttonSmall },
-  labelSize_md: { ...Typography.button },
-  labelSize_lg: { ...Typography.button, fontSize: 16 },
+    labelSize_sm: { ...Typography.buttonSmall },
+    labelSize_md: { ...Typography.button },
+    labelSize_lg: { ...Typography.button, fontSize: 16 },
 
-  disabled: { opacity: 0.5 },
-});
+    disabled: { opacity: 0.5 },
+  });

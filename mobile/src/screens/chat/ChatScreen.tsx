@@ -17,21 +17,28 @@ import { useTranslation } from '@/i18n';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { ChatInputBar } from '@/components/chat/ChatInputBar';
-import { Colors, Typography, Spacing } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 
 export function ChatScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
   const { messages, isTyping, sendMessage, newSession } = useChatStore();
 
   const headerDir = isRTL ? 'row-reverse' : 'row';
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      {/* Fixed header — stays above the keyboard */}
+    <View style={{ flex: 1, backgroundColor: c.background }}>
       <LinearGradient
-        colors={[Colors.primary, Colors.primaryDark]}
+        colors={[c.primary, c.primaryDark]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top, flexDirection: headerDir }]}
@@ -59,7 +66,6 @@ export function ChatScreen() {
         </Pressable>
       </LinearGradient>
 
-      {/* Messages + input — moves up when keyboard opens */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -98,48 +104,49 @@ export function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-  },
-  headerLeft: { alignItems: 'center', gap: Spacing.sm, flex: 1 },
-  menuBtn: { paddingRight: Spacing.xs },
-  aiAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  aiAvatarText: { fontSize: 14, fontWeight: '800', color: '#fff' },
-  headerTitle: { ...Typography.h4, color: '#fff' },
-  headerSubtitle: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
-  newChatBtn: { padding: Spacing.xs },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    header: {
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.md,
+    },
+    headerLeft: { alignItems: 'center', gap: Spacing.sm, flex: 1 },
+    menuBtn: { paddingRight: Spacing.xs },
+    aiAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.3)',
+    },
+    aiAvatarText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+    headerTitle: { ...Typography.h4, color: '#fff' },
+    headerSubtitle: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
+    newChatBtn: { padding: Spacing.xs },
 
-  listContent: { paddingTop: Spacing.base, paddingBottom: Spacing.sm },
+    listContent: { paddingTop: Spacing.base, paddingBottom: Spacing.sm },
 
-  welcome: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing['2xl'],
-    alignItems: 'center',
-  },
-  welcomeCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: Spacing.xl,
-    maxWidth: 320,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  welcomeText: {
-    ...Typography.bodyLarge,
-    color: Colors.text,
-    lineHeight: 24,
-  },
-});
+    welcome: {
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing['2xl'],
+      alignItems: 'center',
+    },
+    welcomeCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: Spacing.xl,
+      maxWidth: 320,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    welcomeText: {
+      ...Typography.bodyLarge,
+      color: c.text,
+      lineHeight: 24,
+    },
+  });

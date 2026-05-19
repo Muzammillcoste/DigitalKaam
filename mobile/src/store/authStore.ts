@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../../utils/supabase';
+import { authApi } from '../../utils/api';
 
 export interface UserProfile {
   id: string;
@@ -58,6 +59,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   toggleProviderMode: () => set((state) => ({ isProviderMode: !state.isProviderMode })),
 
   logout: async () => {
+    // Revoke the session on the backend first (non-fatal if it fails —
+    // the token may already be expired). Then clear the local session.
+    try {
+      await authApi.logout();
+    } catch {
+      // ignore — we still want to sign the user out locally
+    }
     await supabase.auth.signOut();
     set({ userId: null, token: null, profile: null, providerProfile: null, isProviderMode: false });
   },

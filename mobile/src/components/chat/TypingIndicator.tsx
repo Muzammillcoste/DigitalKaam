@@ -1,9 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { Colors, Spacing, Radius } from '@/theme';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import { Avatar } from '@/components/ui/Avatar';
+import { useTranslation } from '@/i18n';
 
-function Dot({ delay }: { delay: number }) {
+function Dot({ delay, color }: { delay: number; color: string }) {
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -20,45 +28,61 @@ function Dot({ delay }: { delay: number }) {
   }, []);
 
   return (
-    <Animated.View style={[styles.dot, { transform: [{ translateY }] }]} />
+    <Animated.View
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: color,
+        transform: [{ translateY }],
+      }}
+    />
   );
 }
 
+/**
+ * Streaming/ticking indicator — shown from the moment a message is sent
+ * until the AI response arrives (driven by chatStore.isTyping).
+ */
 export function TypingIndicator() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
+
   return (
     <View style={styles.row}>
-      <Avatar name="DK" size={32} bgColor={Colors.primary} />
+      <Avatar name="DK" size={32} bgColor={c.primary} />
       <View style={styles.bubble}>
-        <Dot delay={0} />
-        <Dot delay={150} />
-        <Dot delay={300} />
+        <View style={styles.dots}>
+          <Dot delay={0} color={c.primary} />
+          <Dot delay={150} color={c.primary} />
+          <Dot delay={300} color={c.primary} />
+        </View>
+        <Text style={styles.label}>{t('chat.typing')}</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
-    gap: Spacing.xs,
-  },
-  bubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderBottomLeftRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    gap: Spacing.xs,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: Spacing.base,
+      marginBottom: Spacing.sm,
+      gap: Spacing.xs,
+    },
+    bubble: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: Radius.lg,
+      borderBottomLeftRadius: Radius.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      gap: Spacing.sm,
+    },
+    dots: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    label: { ...Typography.caption, color: c.textSecondary },
+  });

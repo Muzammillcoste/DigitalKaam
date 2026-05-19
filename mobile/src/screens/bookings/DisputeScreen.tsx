@@ -4,7 +4,13 @@ import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors, Typography, Spacing, Radius } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { BookingsScreenProps } from '@/navigation/types';
 
 const DISPUTE_TYPES = [
@@ -16,6 +22,7 @@ const DISPUTE_TYPES = [
 
 export function DisputeScreen({ route, navigation }: BookingsScreenProps<'Dispute'>) {
   const { bookingId, providerId, userId } = route.params;
+  const styles = useThemedStyles(makeStyles);
   const { showToast } = useUIStore();
   const [disputeType, setDisputeType] = useState('');
   const [description, setDescription] = useState('');
@@ -73,27 +80,28 @@ export function DisputeScreen({ route, navigation }: BookingsScreenProps<'Disput
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.xl, gap: Spacing.base },
-  heading: { ...Typography.h3, color: Colors.text },
-  sub: { ...Typography.body, color: Colors.textSecondary },
-  types: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  typeCard: {
-    width: '47%',
-    alignItems: 'center',
-    padding: Spacing.base,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    gap: Spacing.xs,
-  },
-  typeCardSelected: {
-    borderColor: Colors.error,
-    backgroundColor: Colors.errorLight,
-  },
-  typeIcon: { fontSize: 28 },
-  typeLabel: { ...Typography.body, color: Colors.text, textAlign: 'center' },
-  typeLabelSelected: { color: Colors.error, fontWeight: '600' },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    content: { padding: Spacing.xl, gap: Spacing.base },
+    heading: { ...Typography.h3, color: c.text },
+    sub: { ...Typography.body, color: c.textSecondary },
+    types: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    typeCard: {
+      width: '47%',
+      alignItems: 'center',
+      padding: Spacing.base,
+      borderRadius: Radius.lg,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      gap: Spacing.xs,
+    },
+    typeCardSelected: {
+      borderColor: c.error,
+      backgroundColor: c.errorLight,
+    },
+    typeIcon: { fontSize: 28 },
+    typeLabel: { ...Typography.body, color: c.text, textAlign: 'center' },
+    typeLabelSelected: { color: c.error, fontWeight: '600' },
+  });

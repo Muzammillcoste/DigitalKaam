@@ -19,7 +19,15 @@ import { useTranslation, useLocalizedInputProps } from '@/i18n';
 import { api } from '../../../utils/api';
 import { Dropdown, type DropdownOption } from '@/components/ui/Dropdown';
 import { PillInput } from '@/components/ui/PillInput';
-import { Colors, Typography, Spacing, Radius, Shadow } from '@/theme';
+import {
+  Typography,
+  Spacing,
+  Radius,
+  Shadow,
+  useColors,
+  useThemedStyles,
+  type ColorPalette,
+} from '@/theme';
 import type { ProfileScreenProps } from '@/navigation/types';
 
 // Must match backend VALID_SERVICE_TYPES (provider.routes.ts) exactly.
@@ -50,6 +58,8 @@ export function BecomeProviderScreen({
   navigation,
 }: ProfileScreenProps<'BecomeProvider'>) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
   const langInput = useLocalizedInputProps();
   const { userId, profile, setProviderProfile, toggleProviderMode } =
@@ -99,7 +109,6 @@ export function BecomeProviderScreen({
 
       setProviderProfile(provider);
       showToast(t('provider.success'), 'success');
-      // Switch into provider mode — MainNavigator swaps to the provider UI.
       toggleProviderMode();
     } catch (err: any) {
       const msg = String(err?.message ?? '');
@@ -118,16 +127,18 @@ export function BecomeProviderScreen({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['3xl'] }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['5xl'] }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
         <LinearGradient
-          colors={[Colors.primary, Colors.primaryDark]}
+          colors={[c.primary, c.primaryDark]}
           style={styles.hero}
         >
           <View style={styles.heroIcon}>
@@ -162,7 +173,7 @@ export function BecomeProviderScreen({
               placeholder={t('provider.specializationPlaceholder')}
               value={specialization}
               onChangeText={setSpecialization}
-              placeholderTextColor={Colors.textDisabled}
+              placeholderTextColor={c.textDisabled}
               textAlign={langInput.textAlign}
               keyboardType={langInput.keyboardType}
             />
@@ -184,7 +195,7 @@ export function BecomeProviderScreen({
                   value={experienceYears}
                   onChangeText={setExperienceYears}
                   keyboardType="number-pad"
-                  placeholderTextColor={Colors.textDisabled}
+                  placeholderTextColor={c.textDisabled}
                 />
               </View>
               <View style={styles.flexHalf}>
@@ -200,7 +211,7 @@ export function BecomeProviderScreen({
                   value={hourlyRate}
                   onChangeText={setHourlyRate}
                   keyboardType="number-pad"
-                  placeholderTextColor={Colors.textDisabled}
+                  placeholderTextColor={c.textDisabled}
                 />
               </View>
             </View>
@@ -228,7 +239,7 @@ export function BecomeProviderScreen({
               value={travelRadius}
               onChangeText={setTravelRadius}
               keyboardType="number-pad"
-              placeholderTextColor={Colors.textDisabled}
+              placeholderTextColor={c.textDisabled}
             />
 
             <View style={{ height: Spacing.base }} />
@@ -265,74 +276,75 @@ export function BecomeProviderScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  hero: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing['2xl'],
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  heroIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: Radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
-  },
-  heroTitle: { ...Typography.h2, color: '#fff', textAlign: 'center' },
-  heroSubtitle: {
-    ...Typography.body,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-  },
-  form: {
-    padding: Spacing.base,
-    marginTop: -Spacing.lg,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-  },
-  label: {
-    ...Typography.label,
-    color: Colors.text,
-    marginBottom: Spacing.xs,
-  },
-  input: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    ...Typography.bodyLarge,
-    color: Colors.text,
-    marginBottom: Spacing.base,
-  },
-  inputError: { borderColor: Colors.error },
-  errorText: {
-    ...Typography.caption,
-    color: Colors.error,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.base,
-  },
-  row: { gap: Spacing.base },
-  flexHalf: { flex: 1 },
-  submitBtn: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.base,
-    borderRadius: Radius.lg,
-    gap: Spacing.sm,
-    marginTop: Spacing.xl,
-  },
-  submitBtnDisabled: { opacity: 0.7 },
-  submitText: { ...Typography.button, color: '#fff', fontSize: 16 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    hero: {
+      paddingHorizontal: Spacing.xl,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing['2xl'],
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    heroIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: Radius.lg,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.sm,
+    },
+    heroTitle: { ...Typography.h2, color: '#fff', textAlign: 'center' },
+    heroSubtitle: {
+      ...Typography.body,
+      color: 'rgba(255,255,255,0.85)',
+      textAlign: 'center',
+    },
+    form: {
+      padding: Spacing.base,
+      marginTop: -Spacing.lg,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.xl,
+      padding: Spacing.lg,
+    },
+    label: {
+      ...Typography.label,
+      color: c.text,
+      marginBottom: Spacing.xs,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      ...Typography.bodyLarge,
+      color: c.text,
+      marginBottom: Spacing.base,
+    },
+    inputError: { borderColor: c.error },
+    errorText: {
+      ...Typography.caption,
+      color: c.error,
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.base,
+    },
+    row: { gap: Spacing.base },
+    flexHalf: { flex: 1 },
+    submitBtn: {
+      backgroundColor: c.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.base,
+      borderRadius: Radius.lg,
+      gap: Spacing.sm,
+      marginTop: Spacing.xl,
+    },
+    submitBtnDisabled: { opacity: 0.7 },
+    submitText: { ...Typography.button, color: '#fff', fontSize: 16 },
+  });
