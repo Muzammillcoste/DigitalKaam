@@ -23,6 +23,38 @@ const PORT = process.env.PORT ?? 3000
 app.use(cors())
 app.use(express.json())
 
+// ── Rate Limiters ─────────────────────────────────────────────────────────────
+// General API: 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+})
+
+// Chat: 20 messages per minute (AI calls are expensive)
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Chat rate limit exceeded. Please wait a moment.' },
+})
+
+// Auth: 10 attempts per 15 minutes (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many auth attempts. Try again in 15 minutes.' },
+})
+
+app.use('/api/', generalLimiter)
+app.use('/api/chat', chatLimiter)
+app.use('/api/auth', authLimiter)
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'DigitalKaam Antigravity API', timestamp: new Date().toISOString() })

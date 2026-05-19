@@ -28,7 +28,8 @@ export default function App() {
       .then((p: any) => setProfile(p))
       .catch(() => {});
 
-    api.provider.getByUserId(userId)
+    // GET /api/provider/me — 404 simply means "not a provider yet" (swallowed).
+    api.provider.me()
       .then((p: any) => {
         if (p) setProviderProfile(p);
       })

@@ -1,50 +1,57 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
   View,
-  FlatList,
   Text,
+  FlatList,
   StyleSheet,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { useChatStore } from '@/store/chatStore';
-import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/i18n';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { ChatInputBar } from '@/components/chat/ChatInputBar';
 import { Colors, Typography, Spacing } from '@/theme';
 
-const WELCOME_TEXT =
-  'Assalam-o-Alaikum! 👋\n\nI\'m your DigitalKaam assistant. Tell me what service you need — for example:\n\n"Mera AC kharab hai, Gulshan mein kal subah mistri chahiye"\n\nor\n\n"I need a plumber in DHA today afternoon"';
-
 export function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const { t, isRTL } = useTranslation();
   const { messages, isTyping, sendMessage, newSession } = useChatStore();
-  const { profile } = useAuthStore();
-  const listRef = useRef<FlatList>(null);
 
-  const handleSend = (text: string) => {
-    sendMessage(text);
-  };
+  const headerDir = isRTL ? 'row-reverse' : 'row';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      {/* Fixed header — stays above the keyboard */}
       <LinearGradient
         colors={[Colors.primary, Colors.primaryDark]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top, flexDirection: headerDir }]}
       >
-        <View style={styles.headerLeft}>
+        <View style={[styles.headerLeft, { flexDirection: headerDir }]}>
+          <Pressable
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            hitSlop={10}
+            style={styles.menuBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
+          >
+            <Ionicons name="menu" size={26} color="#fff" />
+          </Pressable>
           <View style={styles.aiAvatar}>
             <Text style={styles.aiAvatarText}>DK</Text>
           </View>
           <View>
-            <Text style={styles.headerTitle}>DigitalKaam AI</Text>
-            <Text style={styles.headerSubtitle}>Always ready to help</Text>
+            <Text style={styles.headerTitle}>{t('chat.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('chat.subtitle')}</Text>
           </View>
         </View>
         <Pressable onPress={newSession} style={styles.newChatBtn} hitSlop={8}>
@@ -52,43 +59,54 @@ export function ChatScreen() {
         </Pressable>
       </LinearGradient>
 
-      {/* Messages */}
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MessageBubble message={item} />}
-        inverted
-        contentContainerStyle={styles.listContent}
-        ListFooterComponent={
-          messages.length === 0 ? (
-            <View style={styles.welcome}>
-              <View style={styles.welcomeCard}>
-                <Text style={styles.welcomeText}>{WELCOME_TEXT}</Text>
+      {/* Messages + input — moves up when keyboard opens */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MessageBubble message={item} />}
+          inverted
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          ListFooterComponent={
+            messages.length === 0 ? (
+              <View style={styles.welcome}>
+                <View style={styles.welcomeCard}>
+                  <Text
+                    style={[
+                      styles.welcomeText,
+                      { textAlign: isRTL ? 'right' : 'left' },
+                    ]}
+                  >
+                    {t('chat.welcome')}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ) : null
-        }
-        ListHeaderComponent={isTyping ? <TypingIndicator /> : null}
-      />
+            ) : null
+          }
+          ListHeaderComponent={isTyping ? <TypingIndicator /> : null}
+        />
 
-      {/* Input */}
-      <ChatInputBar onSend={handleSend} disabled={isTyping} />
+        <ChatInputBar onSend={sendMessage} disabled={isTyping} />
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
+    paddingBottom: Spacing.md,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  headerLeft: { alignItems: 'center', gap: Spacing.sm, flex: 1 },
+  menuBtn: { paddingRight: Spacing.xs },
   aiAvatar: {
     width: 40,
     height: 40,

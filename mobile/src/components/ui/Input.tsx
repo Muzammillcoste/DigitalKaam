@@ -17,6 +17,9 @@ interface InputProps {
   autoComplete?: TextInput['props']['autoComplete'];
   editable?: boolean;
   onBlur?: () => void;
+  /** RTL support — pass from the i18n localizedInputProps helper. */
+  textAlign?: TextInput['props']['textAlign'];
+  writingDirection?: 'ltr' | 'rtl';
 }
 
 export function Input({
@@ -33,6 +36,8 @@ export function Input({
   autoComplete,
   editable = true,
   onBlur,
+  textAlign,
+  writingDirection,
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -50,7 +55,12 @@ export function Input({
         ]}
       >
         <TextInput
-          style={[styles.input, multiline && styles.multilineInput]}
+          style={[
+            styles.input,
+            multiline && styles.multilineInput,
+            !!textAlign && { textAlign },
+            !!writingDirection && { writingDirection },
+          ]}
           placeholder={placeholder}
           placeholderTextColor={Colors.textDisabled}
           value={value}

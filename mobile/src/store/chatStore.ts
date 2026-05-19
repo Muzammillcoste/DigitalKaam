@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { chatApi } from '../../utils/api';
+import { chatApi, type ChatSessionSummary } from '../../utils/api';
+import { useSettingsStore } from './settingsStore';
+import { translate } from '@/i18n';
 
 export type MessageRole = 'user' | 'ai';
 
@@ -15,10 +17,16 @@ interface ChatState {
   sessionId: string;
   isTyping: boolean;
 
+  /** Past conversations for the "Recent Chats" sidebar list. */
+  sessions: ChatSessionSummary[];
+  sessionsLoading: boolean;
+
   sendMessage: (text: string) => Promise<void>;
   addMessage: (role: MessageRole, text: string) => void;
   clearChat: () => void;
   newSession: () => void;
+  fetchSessions: () => Promise<void>;
+  loadSession: (sessionId: string) => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).slice(2, 11);
@@ -28,6 +36,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   sessionId: generateSessionId(),
   isTyping: false,
+  sessions: [],
+  sessionsLoading: false,
 
   addMessage: (role, text) => {
     const msg: ChatMessage = {
@@ -36,6 +46,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       text,
       timestamp: new Date(),
     };
+    // Newest first — the chat FlatList is `inverted`.
     set((state) => ({ messages: [msg, ...state.messages] }));
   },
 
@@ -48,7 +59,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const res = await chatApi.send(sessionId, text);
       addMessage('ai', res.response);
     } catch (err: any) {
-      addMessage('ai', 'Sorry, I could not connect to the service. Please try again.');
+      const lang = useSettingsStore.getState().language;
+      addMessage('ai', translate(lang, 'chat.connectionError'));
     } finally {
       set({ isTyping: false });
     }
@@ -58,4 +70,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   newSession: () =>
     set({ messages: [], sessionId: generateSessionId(), isTyping: false }),
+
+  fetchSessions: async () => {
+    set({ sessionsLoading: true });
+    try {
+      const { sessions } = await chatApi.history();
+      set({ sessions: sessions ?? [], sessionsLoading: false });
+    } catch {
+      // Non-fatal — the sidebar simply shows no recent chats.
+      set({ sessionsLoading: false });
+    }
+  },
+
+  loadSession: async (sessionId: string) => {
+    set({ isTyping: false });
+    try {
+      const { messages } = await chatApi.session(sessionId);
+      // API returns chronological asc; store keeps newest-first for the
+      // inverted list, so reverse before mapping.
+      const mapped: ChatMessage[] = [...(messages ?? [])]
+        .reverse()
+        .map((m) => ({
+          id: m.id,
+          role: m.role === 'user' ? 'user' : 'ai',
+          text: m.content,
+          timestamp: new Date(m.created_at),
+        }));
+      set({ sessionId, messages: mapped });
+    } catch {
+      // If history can't load, start the selected session fresh rather
+      // than leaving the previous conversation on screen.
+      set({ sessionId, messages: [] });
+    }
+  },
 }));

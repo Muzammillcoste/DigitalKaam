@@ -1,6 +1,5 @@
-import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp, BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { DrawerScreenProps } from '@react-navigation/drawer';
 
 // ── Auth Stack ────────────────────────────────────────────────
 export type AuthStackParamList = {
@@ -9,11 +8,11 @@ export type AuthStackParamList = {
   Register: undefined;
 };
 
-// ── Tab Navigator ─────────────────────────────────────────────
-export type TabParamList = {
-  ChatTab: undefined;
-  BookingsTab: undefined;
-  ProfileTab: undefined;
+// ── Customer Drawer (Claude-style sidebar) ────────────────────
+export type DrawerParamList = {
+  ChatHome: undefined;
+  Bookings: undefined;
+  SettingsRoot: undefined;
 };
 
 // ── Chat Stack ────────────────────────────────────────────────
@@ -30,18 +29,28 @@ export type BookingsStackParamList = {
   Dispute: { bookingId: string; providerId: string; userId: string };
 };
 
-// ── Profile Stack ─────────────────────────────────────────────
-export type ProfileStackParamList = {
+// ── Settings Stack (Profile now nested here) ──────────────────
+export type SettingsStackParamList = {
+  Settings: undefined;
   Profile: undefined;
   EditProfile: undefined;
-  BecomeProfile: undefined;
-  ProviderDashboard: undefined;
+  BecomeProvider: undefined;
+  Permissions: undefined;
   ProviderJobDetail: { bookingId: string };
 };
 
-// ── Typed screen props helpers ────────────────────────────────
+// ── Provider mode (kept on tabs) ──────────────────────────────
+export type ProviderTabParamList = {
+  JobsTab: undefined;
+  SettingsTab: undefined;
+};
+
+// ── Typed screen-prop helpers ─────────────────────────────────
 export type AuthScreenProps<T extends keyof AuthStackParamList> =
   NativeStackScreenProps<AuthStackParamList, T>;
+
+export type DrawerNavScreenProps<T extends keyof DrawerParamList> =
+  DrawerScreenProps<DrawerParamList, T>;
 
 export type ChatScreenProps<T extends keyof ChatStackParamList> =
   NativeStackScreenProps<ChatStackParamList, T>;
@@ -49,5 +58,12 @@ export type ChatScreenProps<T extends keyof ChatStackParamList> =
 export type BookingsScreenProps<T extends keyof BookingsStackParamList> =
   NativeStackScreenProps<BookingsStackParamList, T>;
 
-export type ProfileScreenProps<T extends keyof ProfileStackParamList> =
-  NativeStackScreenProps<ProfileStackParamList, T>;
+export type SettingsScreenProps<T extends keyof SettingsStackParamList> =
+  NativeStackScreenProps<SettingsStackParamList, T>;
+
+/**
+ * Back-compat alias: several profile screens still import `ProfileScreenProps`.
+ * Profile lives inside the Settings stack now.
+ */
+export type ProfileScreenProps<T extends keyof SettingsStackParamList> =
+  NativeStackScreenProps<SettingsStackParamList, T>;

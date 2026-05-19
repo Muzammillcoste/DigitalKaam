@@ -1,10 +1,21 @@
 import React from 'react';
+import { Dimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/theme';
 import { useAuthStore } from '@/store/authStore';
-import type { TabParamList, ChatStackParamList, BookingsStackParamList, ProfileStackParamList } from './types';
+import { useTranslation } from '@/i18n';
+import type {
+  DrawerParamList,
+  ChatStackParamList,
+  BookingsStackParamList,
+  SettingsStackParamList,
+  ProviderTabParamList,
+} from './types';
+import { AppSidebar } from './AppSidebar';
+import { HeaderMenuButton } from './HeaderMenuButton';
 
 import { ChatScreen } from '@/screens/chat/ChatScreen';
 import { BookingConfirmSheet } from '@/screens/chat/BookingConfirmSheet';
@@ -12,21 +23,30 @@ import { BookingsListScreen } from '@/screens/bookings/BookingsListScreen';
 import { BookingDetailScreen } from '@/screens/bookings/BookingDetailScreen';
 import { FeedbackScreen } from '@/screens/bookings/FeedbackScreen';
 import { DisputeScreen } from '@/screens/bookings/DisputeScreen';
+import { SettingsScreen } from '@/screens/settings/SettingsScreen';
+import { PermissionsScreen } from '@/screens/settings/PermissionsScreen';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
 import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
 import { BecomeProviderScreen } from '@/screens/profile/BecomeProviderScreen';
 import { ProviderDashboardScreen } from '@/screens/provider/ProviderDashboardScreen';
 import { ProviderJobDetailScreen } from '@/screens/provider/ProviderJobDetailScreen';
 
-const Tab = createBottomTabNavigator<TabParamList>();
+const Drawer = createDrawerNavigator<DrawerParamList>();
 const ChatStack = createNativeStackNavigator<ChatStackParamList>();
 const BookingsStack = createNativeStackNavigator<BookingsStackParamList>();
-const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
-
-const ProviderTab = createBottomTabNavigator<any>();
+const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
+const ProviderTab = createBottomTabNavigator<ProviderTabParamList>();
 const ProviderStack = createNativeStackNavigator<any>();
 
-function ChatNavigator() {
+const stackHeader = {
+  headerStyle: { backgroundColor: Colors.surface },
+  headerTintColor: Colors.text,
+  headerShadowVisible: false,
+  headerTitleStyle: { fontWeight: '600' as const },
+};
+
+// ── Chat (the only thing on the main screen) ──────────────────
+function ChatStackNavigator() {
   return (
     <ChatStack.Navigator screenOptions={{ headerShown: false }}>
       <ChatStack.Screen name="Chat" component={ChatScreen} />
@@ -39,20 +59,18 @@ function ChatNavigator() {
   );
 }
 
+// ── Bookings ──────────────────────────────────────────────────
 function BookingsNavigator() {
+  const { t } = useTranslation();
   return (
-    <BookingsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.text,
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '600' },
-      }}
-    >
+    <BookingsStack.Navigator screenOptions={stackHeader}>
       <BookingsStack.Screen
         name="BookingsList"
         component={BookingsListScreen}
-        options={{ title: 'My Bookings' }}
+        options={{
+          title: t('bookings.title'),
+          headerLeft: () => <HeaderMenuButton />,
+        }}
       />
       <BookingsStack.Screen
         name="BookingDetail"
@@ -73,50 +91,73 @@ function BookingsNavigator() {
   );
 }
 
-function ProfileNavigator() {
+// ── Settings (Profile now nested here) ────────────────────────
+function SettingsNavigator({ withMenu = true }: { withMenu?: boolean }) {
+  const { t } = useTranslation();
   return (
-    <ProfileStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.text,
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '600' },
-      }}
-    >
-      <ProfileStack.Screen
+    <SettingsStack.Navigator screenOptions={stackHeader}>
+      <SettingsStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: t('settings.title'),
+          headerLeft: withMenu ? () => <HeaderMenuButton /> : undefined,
+        }}
+      />
+      <SettingsStack.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: 'My Profile' }}
+        options={{ title: t('profile.title') }}
       />
-      <ProfileStack.Screen
+      <SettingsStack.Screen
         name="EditProfile"
         component={EditProfileScreen}
-        options={{ title: 'Edit Profile' }}
+        options={{ title: t('profile.editProfile') }}
       />
-      <ProfileStack.Screen
-        name="BecomeProfile"
+      <SettingsStack.Screen
+        name="BecomeProvider"
         component={BecomeProviderScreen}
-        options={{ title: 'Become a Provider' }}
+        options={{ title: t('profile.becomeProvider') }}
       />
-      <ProfileStack.Screen
+      <SettingsStack.Screen
+        name="Permissions"
+        component={PermissionsScreen}
+        options={{ title: t('settings.permissions') }}
+      />
+      <SettingsStack.Screen
         name="ProviderJobDetail"
         component={ProviderJobDetailScreen}
         options={{ title: 'Job Details' }}
       />
-    </ProfileStack.Navigator>
+    </SettingsStack.Navigator>
   );
 }
 
-function ProviderJobsStack() {
+// ── Customer experience: Claude-style drawer ──────────────────
+function CustomerDrawer() {
+  const width = Math.min(Dimensions.get('window').width * 0.86, 360);
   return (
-    <ProviderStack.Navigator
+    <Drawer.Navigator
+      drawerContent={(props) => <AppSidebar {...props} />}
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.text,
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '600' },
+        headerShown: false,
+        drawerType: 'front',
+        drawerStyle: { width, backgroundColor: Colors.surface },
+        sceneStyle: { backgroundColor: Colors.background },
+        swipeEdgeWidth: 60,
       }}
     >
+      <Drawer.Screen name="ChatHome" component={ChatStackNavigator} />
+      <Drawer.Screen name="Bookings" component={BookingsNavigator} />
+      <Drawer.Screen name="SettingsRoot" component={SettingsNavigator} />
+    </Drawer.Navigator>
+  );
+}
+
+// ── Provider experience (unchanged structure, Settings reused) ─
+function ProviderJobsStack() {
+  return (
+    <ProviderStack.Navigator screenOptions={stackHeader}>
       <ProviderStack.Screen
         name="ProviderDashboard"
         component={ProviderDashboardScreen}
@@ -132,6 +173,7 @@ function ProviderJobsStack() {
 }
 
 export function ProviderNavigator() {
+  const { t } = useTranslation();
   return (
     <ProviderTab.Navigator
       screenOptions={({ route }) => ({
@@ -147,9 +189,12 @@ export function ProviderNavigator() {
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
         tabBarIcon: ({ focused, color, size }) => {
-          const icons: Record<string, { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
+          const icons: Record<
+            string,
+            { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }
+          > = {
             JobsTab: { focused: 'briefcase', outline: 'briefcase-outline' },
-            ProfileTab: { focused: 'person', outline: 'person-outline' },
+            SettingsTab: { focused: 'settings', outline: 'settings-outline' },
           };
           const icon = icons[route.name];
           return (
@@ -162,53 +207,22 @@ export function ProviderNavigator() {
         },
       })}
     >
-      <ProviderTab.Screen name="JobsTab" component={ProviderJobsStack} options={{ title: 'My Jobs' }} />
-      <ProviderTab.Screen name="ProfileTab" component={ProfileNavigator} options={{ title: 'Profile' }} />
+      <ProviderTab.Screen
+        name="JobsTab"
+        component={ProviderJobsStack}
+        options={{ title: 'My Jobs' }}
+      />
+      <ProviderTab.Screen
+        name="SettingsTab"
+        options={{ title: t('settings.title') }}
+      >
+        {() => <SettingsNavigator withMenu={false} />}
+      </ProviderTab.Screen>
     </ProviderTab.Navigator>
   );
 }
 
 export function MainNavigator() {
   const { isProviderMode } = useAuthStore();
-
-  if (isProviderMode) {
-    return <ProviderNavigator />;
-  }
-
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textDisabled,
-        tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.border,
-          borderTopWidth: 1,
-          paddingBottom: 4,
-          height: 60,
-        },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
-        tabBarIcon: ({ focused, color, size }) => {
-          const icons: Record<string, { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
-            ChatTab: { focused: 'chatbubble-ellipses', outline: 'chatbubble-ellipses-outline' },
-            BookingsTab: { focused: 'calendar', outline: 'calendar-outline' },
-            ProfileTab: { focused: 'person', outline: 'person-outline' },
-          };
-          const icon = icons[route.name];
-          return (
-            <Ionicons
-              name={focused ? icon.focused : icon.outline}
-              size={size}
-              color={color}
-            />
-          );
-        },
-      })}
-    >
-      <Tab.Screen name="ChatTab" component={ChatNavigator} options={{ title: 'Chat' }} />
-      <Tab.Screen name="BookingsTab" component={BookingsNavigator} options={{ title: 'Bookings' }} />
-      <Tab.Screen name="ProfileTab" component={ProfileNavigator} options={{ title: 'Profile' }} />
-    </Tab.Navigator>
-  );
+  return isProviderMode ? <ProviderNavigator /> : <CustomerDrawer />;
 }

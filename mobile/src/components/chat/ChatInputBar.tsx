@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadow } from '@/theme';
 import { useLocation } from '@/hooks/useLocation';
 import { useVoice } from '@/hooks/useVoice';
+import { useTranslation, useLocalizedInputProps } from '@/i18n';
 
 interface ChatInputBarProps {
   onSend: (text: string) => void;
@@ -20,6 +21,8 @@ interface ChatInputBarProps {
 export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
   const [text, setText] = useState('');
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const langInput = useLocalizedInputProps();
   const { getCurrentArea, isLoading: locationLoading } = useLocation();
 
   const handleTranscript = (transcript: string) => {
@@ -46,8 +49,8 @@ export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
     <View style={[styles.container, { paddingBottom: insets.bottom + Spacing.xs }]}>
       <View style={[styles.bar, Shadow.sm]}>
         <TextInput
-          style={styles.input}
-          placeholder="Type or speak your request..."
+          style={[styles.input, { textAlign: langInput.textAlign }]}
+          placeholder={t('chat.inputPlaceholder')}
           placeholderTextColor={Colors.textDisabled}
           value={text}
           onChangeText={setText}
@@ -55,6 +58,7 @@ export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
           maxLength={500}
           returnKeyType="send"
           onSubmitEditing={handleSend}
+          keyboardType={langInput.keyboardType}
         />
 
         <View style={styles.actions}>

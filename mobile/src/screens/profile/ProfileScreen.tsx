@@ -1,19 +1,13 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useTranslation } from '@/i18n';
 import { Avatar } from '@/components/ui/Avatar';
-import { Card } from '@/components/ui/Card';
 import { Colors, Typography, Spacing, Radius } from '@/theme';
 import type { ProfileScreenProps } from '@/navigation/types';
 
@@ -21,114 +15,112 @@ interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  danger?: boolean;
 }
 
 export function ProfileScreen({ navigation }: ProfileScreenProps<'Profile'>) {
   const insets = useSafeAreaInsets();
-  const { userId, profile, setProfile, logout, providerProfile, isProviderMode, toggleProviderMode } = useAuthStore();
+  const { t, isRTL } = useTranslation();
+  const {
+    userId,
+    profile,
+    setProfile,
+    providerProfile,
+    isProviderMode,
+    toggleProviderMode,
+  } = useAuthStore();
   const { showToast } = useUIStore();
 
   useEffect(() => {
     if (userId && !profile) {
-      api.users.getProfile(userId)
+      api.users
+        .getProfile(userId)
         .then((p: any) => setProfile(p))
         .catch(() => {});
     }
   }, [userId]);
 
-  const handleLogout = async () => {
-    await logout();
-    showToast('Signed out successfully', 'success');
-  };
-
+  // Legacy "Notifications", "Privacy & Security" and "Help & Support" rows
+  // were intentionally removed — settings now live in the Settings screen.
   const menuItems: MenuItem[] = [
     {
       icon: 'person-outline',
-      label: 'Edit Profile',
+      label: t('profile.editProfile'),
       onPress: () => navigation.navigate('EditProfile'),
     },
-    ...(providerProfile
-      ? [
-          {
-            icon: 'swap-horizontal-outline' as const,
-            label: isProviderMode ? 'Switch to Customer Mode' : 'Switch to Provider Mode',
-            onPress: () => {
-              toggleProviderMode();
-              showToast(isProviderMode ? 'Switched to Customer Mode' : 'Switched to Provider Mode', 'success');
-            },
+    providerProfile
+      ? {
+          icon: 'swap-horizontal-outline',
+          label: isProviderMode
+            ? t('profile.switchToCustomer')
+            : t('profile.switchToProvider'),
+          onPress: () => {
+            toggleProviderMode();
+            showToast(
+              isProviderMode
+                ? t('profile.switchedToCustomer')
+                : t('profile.switchedToProvider'),
+              'success',
+            );
           },
-        ]
-      : [
-          {
-            icon: 'briefcase-outline' as const,
-            label: 'Become a Provider',
-            onPress: () => navigation.navigate('BecomeProfile' as any),
-          },
-        ]),
-    {
-      icon: 'notifications-outline',
-      label: 'Notifications',
-      onPress: () => showToast('Notifications settings coming soon', 'info'),
-    },
-    {
-      icon: 'shield-checkmark-outline',
-      label: 'Privacy & Security',
-      onPress: () => showToast('Privacy settings coming soon', 'info'),
-    },
-    {
-      icon: 'help-circle-outline',
-      label: 'Help & Support',
-      onPress: () => showToast('Support coming soon', 'info'),
-    },
-    {
-      icon: 'log-out-outline',
-      label: 'Sign Out',
-      onPress: handleLogout,
-      danger: true,
-    },
+        }
+      : {
+          icon: 'briefcase-outline',
+          label: t('profile.becomeProvider'),
+          onPress: () => navigation.navigate('BecomeProvider'),
+        },
   ];
 
+  const align = isRTL ? 'right' : 'left';
+  const rowDir = isRTL ? 'row-reverse' : 'row';
+  const chevron = isRTL ? 'chevron-back' : 'chevron-forward';
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['2xl'] }}>
-      {/* Header */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['2xl'] }}
+    >
       <LinearGradient
         colors={[Colors.primary, Colors.primaryDark]}
         style={[styles.header, { paddingTop: insets.top + Spacing.base }]}
       >
-        <Avatar name={profile?.full_name ?? 'User'} size={72} bgColor="rgba(255,255,255,0.3)" />
-        <Text style={styles.name}>{profile?.full_name ?? 'Welcome'}</Text>
+        <Avatar
+          name={profile?.full_name ?? 'User'}
+          size={72}
+          bgColor="rgba(255,255,255,0.3)"
+        />
+        <Text style={styles.name}>
+          {profile?.full_name ?? t('profile.welcome')}
+        </Text>
         <Text style={styles.email}>{profile?.email ?? ''}</Text>
-        {profile?.home_area && (
-          <View style={styles.areaRow}>
-            <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
+        {!!profile?.home_area && (
+          <View style={[styles.areaRow, { flexDirection: rowDir }]}>
+            <Ionicons
+              name="location-outline"
+              size={14}
+              color="rgba(255,255,255,0.8)"
+            />
             <Text style={styles.area}>{profile.home_area}</Text>
           </View>
         )}
       </LinearGradient>
 
-      {/* Menu */}
       <View style={styles.menu}>
         {menuItems.map((item) => (
-          <Pressable key={item.label} style={styles.menuItem} onPress={item.onPress}>
-            <View style={[styles.menuIcon, item.danger && styles.menuIconDanger]}>
-              <Ionicons
-                name={item.icon}
-                size={20}
-                color={item.danger ? Colors.error : Colors.primary}
-              />
+          <Pressable
+            key={item.label}
+            style={[styles.menuItem, { flexDirection: rowDir }]}
+            onPress={item.onPress}
+          >
+            <View style={styles.menuIcon}>
+              <Ionicons name={item.icon} size={20} color={Colors.primary} />
             </View>
-            <Text style={[styles.menuLabel, item.danger && styles.menuLabelDanger]}>
+            <Text style={[styles.menuLabel, { textAlign: align }]}>
               {item.label}
             </Text>
-            {!item.danger && (
-              <Ionicons name="chevron-forward" size={16} color={Colors.textDisabled} />
-            )}
+            <Ionicons name={chevron} size={16} color={Colors.textDisabled} />
           </Pressable>
         ))}
       </View>
-
-      <Text style={styles.version}>DigitalKaam v1.0.0</Text>
     </ScrollView>
   );
 }
@@ -143,7 +135,7 @@ const styles = StyleSheet.create({
   },
   name: { ...Typography.h3, color: '#fff', marginTop: Spacing.sm },
   email: { ...Typography.body, color: 'rgba(255,255,255,0.8)' },
-  areaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  areaRow: { alignItems: 'center', gap: 4 },
   area: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
   menu: {
     margin: Spacing.base,
@@ -152,7 +144,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   menuItem: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.base,
@@ -168,8 +159,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIconDanger: { backgroundColor: Colors.errorLight },
   menuLabel: { ...Typography.bodyLarge, color: Colors.text, flex: 1 },
-  menuLabelDanger: { color: Colors.error },
-  version: { ...Typography.caption, color: Colors.textDisabled, textAlign: 'center', marginTop: Spacing.base },
 });

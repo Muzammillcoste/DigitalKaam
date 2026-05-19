@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useTranslation, useLocalizedInputProps } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors, Spacing } from '@/theme';
@@ -11,6 +12,8 @@ import type { ProfileScreenProps } from '@/navigation/types';
 
 export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfile'>) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const langInput = useLocalizedInputProps();
   const { userId, profile, setProfile, providerProfile, setProviderProfile } = useAuthStore();
   const { showToast } = useUIStore();
 
@@ -26,7 +29,7 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
 
   const handleSave = async () => {
     if (!form.full_name.trim()) {
-      showToast('Name is required', 'warning');
+      showToast(t('profile.nameRequired'), 'warning');
       return;
     }
     if (!userId) return;
@@ -50,10 +53,10 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
         }
       }
 
-      showToast('Profile updated!', 'success');
+      showToast(t('profile.updated'), 'success');
       navigation.goBack();
     } catch {
-      showToast('Failed to update profile', 'error');
+      showToast(t('profile.updateFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -70,27 +73,31 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
         keyboardShouldPersistTaps="handled"
       >
         <Input
-          label="Full Name"
-          placeholder="Your full name"
+          label={t('profile.fullName')}
+          placeholder={t('profile.fullName')}
           value={form.full_name}
           onChangeText={set('full_name')}
           autoCapitalize="words"
+          textAlign={langInput.textAlign}
+          writingDirection={langInput.writingDirection}
         />
         <Input
-          label="Phone Number"
+          label={t('profile.phone')}
           placeholder="03XX-XXXXXXX"
           value={form.phone}
           onChangeText={set('phone')}
           keyboardType="phone-pad"
         />
         <Input
-          label="Home Area"
+          label={t('profile.homeArea')}
           placeholder="e.g. Gulshan, DHA, Clifton"
           value={form.home_area}
           onChangeText={set('home_area')}
           autoCapitalize="words"
+          textAlign={langInput.textAlign}
+          writingDirection={langInput.writingDirection}
         />
-        <Button label="Save Changes" onPress={handleSave} loading={loading} />
+        <Button label={t('common.save')} onPress={handleSave} loading={loading} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
