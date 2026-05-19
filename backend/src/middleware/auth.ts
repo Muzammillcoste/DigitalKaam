@@ -1,5 +1,18 @@
 import { Request, Response, NextFunction } from 'express'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+
+// Dedicated auth-only client used solely for token verification and refresh.
+// Kept separate so that refreshSession() never mutates the shared service-role
+// singleton (which would silently downgrade it from service_role to a user JWT,
+// causing RLS violations on all subsequent DB calls until the server restarts).
+function createAuthClient() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // Extend Request to carry the verified user
 declare global {
@@ -20,8 +33,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const token = authHeader.split(' ')[1]
 
+  // Use an isolated client so auth state mutations never bleed into the
+  // shared service-role singleton used for all DB operations.
+  const authClient = createAuthClient()
+
   // Verify the JWT securely with Supabase
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+  const { data: { user }, error } = await authClient.auth.getUser(token)
 
   // Token is valid
   if (user && !error) {
@@ -39,7 +56,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
 
     // Attempt to auto-refresh the session mid-flight using the provided refresh token
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession({
+    const { data: refreshData, error: refreshError } = await authClient.auth.refreshSession({
       refresh_token: refreshTokenHeader
     })
 
