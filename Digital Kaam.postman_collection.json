@@ -1,0 +1,159 @@
+{
+  "info": {
+    "_postman_id": "8e4b43d7-2a2b-43ca-b2a0-f211e7fb805e",
+    "name": "Digital Kaam",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "33924738",
+    "_collection_link": "https://go.postman.co/collection/33924738-8e4b43d7-2a2b-43ca-b2a0-f211e7fb805e?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"user1@digitalkaam.com\", \"password\": \"Password123!\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:3000/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Refresh token",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"refresh_token\":\"sv7hczveoyge\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:3000/api/auth/refresh",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "chat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImJlMTA0NDFiLWQyY2MtNDU5ZC04M2ZjLWY5OTdmNTJjOGM4ZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215andld25yaHluc2JkZHVjdWR4LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI2NTNjOGJlMi1hYWU0LTQ0NzktOGExNS01NWRlMWMzNjI3NTciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc5MTA0Nzc5LCJpYXQiOjE3NzkxMDExNzksImVtYWlsIjoidXNlcjFAZGlnaXRhbGthYW0uY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiQWxpIEtoYW4ifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc3OTEwMTE3OX1dLCJzZXNzaW9uX2lkIjoiMjhlY2U0ZDYtNWM5Ny00OTM4LTg0NGMtOTRhMjQyZTc2YmI1IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.hxEDpN7rRgNHZcaEeLi5GoOtIWck4fRKexCBY_KkSjsQ-AlP3afkqRMUKUs_pQLbBX1YobTDgYxo39voGTRSLg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"sessionId\": \"session-332\",\r\n    \"message\": \"ha kardo book\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:3000/api/chat",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "chat"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get session",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImJlMTA0NDFiLWQyY2MtNDU5ZC04M2ZjLWY5OTdmNTJjOGM4ZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215andld25yaHluc2JkZHVjdWR4LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI2NTNjOGJlMi1hYWU0LTQ0NzktOGExNS01NWRlMWMzNjI3NTciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc5MTA0Nzc5LCJpYXQiOjE3NzkxMDExNzksImVtYWlsIjoidXNlcjFAZGlnaXRhbGthYW0uY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiQWxpIEtoYW4ifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc3OTEwMTE3OX1dLCJzZXNzaW9uX2lkIjoiMjhlY2U0ZDYtNWM5Ny00OTM4LTg0NGMtOTRhMjQyZTc2YmI1IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.hxEDpN7rRgNHZcaEeLi5GoOtIWck4fRKexCBY_KkSjsQ-AlP3afkqRMUKUs_pQLbBX1YobTDgYxo39voGTRSLg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:3000/api/chat/history?sessionId=session-332",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "chat",
+            "history"
+          ],
+          "query": [
+            {
+              "key": "sessionId",
+              "value": "session-332"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

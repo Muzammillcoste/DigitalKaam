@@ -76,18 +76,6 @@ router.post('/', async (req: Request, res: Response) => {
   console.log(`\n[CHAT] POST /api/chat — userId='${userId}' sessionId='${sessionId}'`)
 
   try {
-    // ── 0. Ensure user_profiles row exists (required by FK on chat_sessions) ──
-    // Without this, session insert fails silently if the user was created via
-    // Supabase Auth but never inserted into user_profiles.
-    const { error: profileUpsertError } = await supabase
-      .from('user_profiles')
-      .upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true })
-    if (profileUpsertError) {
-      console.error('[CHAT] ⚠ user_profiles upsert failed (non-fatal):', profileUpsertError.message)
-    } else {
-      console.log(`[CHAT] user_profiles upsert OK for userId='${userId}'`)
-    }
-
     // ── 1. Load or initialize session state from DB ──────────────────────────
     console.log(`[CHAT] Step 1 — Looking up session '${sessionId}' in DB...`)
     let { data: sessionData, error: sessionLookupError } = await supabase
