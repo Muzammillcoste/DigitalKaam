@@ -1,7 +1,156 @@
 import { Router, Request, Response } from 'express'
 import { supabase } from '../lib/supabase'
+import { requireAuth } from '../middleware/auth'
 
 const router = Router()
+
+// ── Helper: check if a user has registered as a provider ─────────────────────
+async function getProviderStatus(userId: string): Promise<{ isProvider: boolean; providerId: string | null; providerStatus: string | null }> {
+  const { data } = await supabase
+    .from('providers')
+    .select('id, status')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return {
+    isProvider:     !!data,
+    providerId:     data?.id ?? null,
+    providerStatus: data?.status ?? null,
+  }
+}
+
+/**
+ * POST /api/auth/signup
+ * Standard email + password registration.
+ * Creates the Supabase auth user AND the user_profiles row in one call.
+ *
+ * Body: { email, password, full_name, phone?, home_area? }
+ * Returns: { access_token, refresh_token, expires_in, token_type, userId, email }
+ */
+router.post('/signup', async (req: Request, res: Response) => {
+  const { email, password, full_name, phone, home_area } = req.body
+
+  if (!email || !password || !full_name) {
+    return res.status(400).json({ error: 'email, password and full_name are required' })
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'password must be at least 8 characters' })
+  }
+
+  // 1. Create auth user
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,          // skip email verification for mobile flow
+    user_metadata: { full_name },
+  })
+
+  if (error || !data.user) {
+    return res.status(400).json({ error: error?.message ?? 'Signup failed' })
+  }
+
+  const userId = data.user.id
+
+  // 2. Create user_profiles row
+  const { error: profileError } = await supabase.from('user_profiles').insert({
+    id:        userId,
+    full_name,
+    email,
+    phone:     phone ?? null,
+    home_area: home_area ?? null,
+  })
+
+  if (profileError) {
+    // Rollback: delete the auth user so we don't leave orphaned auth rows
+    await supabase.auth.admin.deleteUser(userId)
+    return res.status(500).json({ error: `Profile creation failed: ${profileError.message}` })
+  }
+
+  // 3. Sign in immediately to get tokens
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (signInError || !signInData.session) {
+    return res.status(201).json({ message: 'Account created. Please log in.', userId })
+  }
+
+  const { session } = signInData
+  return res.status(201).json({
+    access_token:  session.access_token,
+    refresh_token: session.refresh_token,
+    expires_in:    session.expires_in,
+    token_type:    'Bearer',
+    userId,
+    email,
+    full_name,
+    isProvider:     false,   // new user — always customer to start
+    providerId:     null,
+    providerStatus: null,
+  })
+})
+
+/**
+ * POST /api/auth/profile/sync
+ * MUST be called by the mobile app immediately after Google (or any OAuth) sign-in.
+ *
+ * Google OAuth creates the Supabase auth user but does NOT create a user_profiles row.
+ * Without this call, the user cannot create chat sessions (FK violation).
+ *
+ * Header: Authorization: Bearer <access_token>   ← the token from the Google OAuth session
+ * Body:   { full_name?, phone?, home_area? }       ← optional; falls back to Google metadata
+ *
+ * Returns: { userId, email, full_name, isNewUser }
+ *
+ * Safe to call multiple times — uses upsert so repeat calls are no-ops.
+ */
+router.post('/profile/sync', requireAuth, async (req: Request, res: Response) => {
+  const userId = req.user!.id
+  const userEmail = req.user!.email
+
+  // Pull display name from request body, or fall back to Supabase user metadata (set by Google)
+  const { phone, home_area } = req.body
+
+  // Get user metadata from Supabase (includes name Google provided)
+  const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId)
+
+  if (userError || !user) {
+    return res.status(500).json({ error: 'Could not fetch user metadata' })
+  }
+
+  const full_name: string =
+    req.body.full_name ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||        // Google sets 'name'
+    userEmail.split('@')[0]             // last resort fallback
+
+  // Check if profile already exists
+  const { data: existing } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('id', userId)
+    .single()
+
+  const isNewUser = !existing
+
+  const { error: upsertError } = await supabase.from('user_profiles').upsert(
+    {
+      id:        userId,
+      full_name,
+      email:     userEmail,
+      phone:     phone ?? null,
+      home_area: home_area ?? null,
+    },
+    { onConflict: 'id' }
+  )
+
+  if (upsertError) {
+    return res.status(500).json({ error: `Profile sync failed: ${upsertError.message}` })
+  }
+
+  const providerInfo = await getProviderStatus(userId)
+  console.log(`[Auth] profile/sync — userId='${userId}' isNewUser=${isNewUser} name='${full_name}' isProvider=${providerInfo.isProvider}`)
+
+  return res.json({ userId, email: userEmail, full_name, isNewUser, ...providerInfo })
+})
 
 /**
  * POST /api/auth/login
@@ -28,14 +177,16 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 
   const { session, user } = data
+  const providerInfo = await getProviderStatus(user.id)
 
   return res.json({
     access_token:  session.access_token,
     refresh_token: session.refresh_token,
-    expires_in:    session.expires_in,   // seconds until access_token expires (typically 3600)
+    expires_in:    session.expires_in,
     token_type:    'Bearer',
     userId:        user.id,
     email:         user.email,
+    ...providerInfo,   // isProvider, providerId, providerStatus
   })
 })
 
