@@ -1,4 +1,4 @@
-### DigitalKaam API Tests
+﻿### DigitalKaam API Tests
 ### Run `npm run dev` in /backend before using these.
 ### In VS Code install the "REST Client" extension to run requests inline.
 ###
@@ -16,6 +16,10 @@
 @providerId   = 00000000-0000-0000-0000-000000000000
 @bookingId    = 00000000-0000-0000-0000-000000000000
 @disputeId    = 00000000-0000-0000-0000-000000000000
+@userId       = 00000000-0000-0000-0000-000000000000
+@reputationId = 00000000-0000-0000-0000-000000000000
+@slotId       = 00000000-0000-0000-0000-000000000000
+@feedbackId   = 00000000-0000-0000-0000-000000000000
 @sessionId    = session-test-001
 
 ###
@@ -31,6 +35,21 @@ GET http://127.0.0.1:3000/health
 ### AUTH
 ### ═══════════════════════════════════════════════════════════
 
+### Signup — create a new customer account
+# @name signup
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "newuser@digitalkaam.com",
+  "password": "Password123!",
+  "full_name": "New User",
+  "phone": "0311-1234567",
+  "home_area": "Gulshan"
+}
+
+###
+
 ### Login — copy access_token into @token above
 # @name login
 POST {{baseUrl}}/auth/login
@@ -44,11 +63,31 @@ Content-Type: application/json
 ###
 
 ### Refresh access token (call when access_token expires)
+### Each refresh_token is single-use — always save the new one returned
 POST {{baseUrl}}/auth/refresh
 Content-Type: application/json
 
 {
   "refresh_token": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+###
+
+### Logout — revokes the current session
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+###
+
+### Profile sync — MUST be called after Google/OAuth sign-in to create user_profiles row
+### Safe to call multiple times (upsert)
+POST {{baseUrl}}/auth/profile/sync
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "phone": "0311-9999999",
+  "home_area": "DHA"
 }
 
 ###
@@ -91,9 +130,94 @@ GET {{baseUrl}}/chat/history
 Authorization: Bearer {{token}}
 
 ###
+
+### Transcribe audio to text (standalone — shows what Gemini heard before sending to chat)
+### Supported mimeTypes: audio/m4a | audio/mp4 | audio/wav | audio/webm | audio/ogg | audio/mpeg
+### Size limit: 20 MB raw
+POST {{baseUrl}}/chat/transcribe
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "audio": "BASE64_ENCODED_AUDIO_HERE",
+  "mimeType": "audio/m4a"
+}
+
+###
+
+### Voice chat — transcribe audio + run through orchestrator in one call
+### Returns: { transcription, response, userId, turnCount }
+POST {{baseUrl}}/chat/voice
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "audio": "BASE64_ENCODED_AUDIO_HERE",
+  "mimeType": "audio/m4a",
+  "sessionId": "{{sessionId}}"
+}
+
+###
 ### ═══════════════════════════════════════════════════════════
-### PROVIDERS  (public read, no auth required)
+### SERVICE (Antigravity pipeline — legacy entry point)
 ### ═══════════════════════════════════════════════════════════
+
+### Run full Antigravity orchestrator pipeline (non-chat, direct booking)
+POST {{baseUrl}}/service/request
+Content-Type: application/json
+
+{
+  "userInput": "I need an AC technician in Malir tomorrow morning",
+  "userId": "{{userId}}",
+  "requestedDate": "2026-05-20",
+  "requestedTime": "10:00",
+  "location": "Malir"
+}
+
+###
+### ═══════════════════════════════════════════════════════════
+### PROVIDERS
+### ═══════════════════════════════════════════════════════════
+
+### Get my own provider profile (logged-in provider)
+### Returns 404 if user has not registered as a provider yet
+GET {{baseUrl}}/provider/me
+Authorization: Bearer {{token}}
+
+###
+
+### Become a provider — convert existing user account into a provider
+### Can only be called once per user (409 if already a provider)
+### Valid service_type: AC Technician | Electrician | Plumber | Mechanic | Tutor | Beautician | Driver
+POST {{baseUrl}}/provider/onboard
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "service_type": "AC Technician",
+  "specialization": "Inverter AC Repair & Gas Refill",
+  "experience_years": 5,
+  "hourly_rate": 900,
+  "area": "Malir",
+  "phone": "0300-1234567",
+  "skills": ["Split AC", "Window AC", "Gas Refill"],
+  "certifications": [],
+  "travel_radius": 15
+}
+
+###
+
+### Update my own provider profile
+PATCH {{baseUrl}}/provider/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "hourly_rate": 1000,
+  "area": "Gulshan"
+}
+
+###
 
 ### List all active providers
 GET {{baseUrl}}/provider
@@ -115,27 +239,7 @@ GET {{baseUrl}}/provider/{{providerId}}
 
 ###
 
-### Get a provider's availability slots
-GET {{baseUrl}}/provider/{{providerId}}/availability
-
-###
-
-### Get a provider's availability for a specific date
-GET {{baseUrl}}/provider/{{providerId}}/availability?date=2026-05-20
-
-###
-
-### Get agent trace logs for a provider
-GET {{baseUrl}}/provider/{{providerId}}/traces
-
-###
-
-### Get all traces for a session
-GET {{baseUrl}}/provider/traces/{{sessionId}}
-
-###
-
-### Create a provider (admin/seed use)
+### Create a provider (admin/seed use — bypasses auth)
 POST {{baseUrl}}/provider
 Content-Type: application/json
 
@@ -160,7 +264,7 @@ Content-Type: application/json
 
 ###
 
-### Update a provider
+### Update a provider by ID (admin use)
 PATCH {{baseUrl}}/provider/{{providerId}}
 Content-Type: application/json
 
@@ -170,12 +274,42 @@ Content-Type: application/json
 }
 
 ###
+
+### Delete a provider by ID
+DELETE {{baseUrl}}/provider/{{providerId}}
+
+###
+
+### Get a provider's availability slots
+GET {{baseUrl}}/provider/{{providerId}}/availability
+
+###
+
+### Get a provider's availability for a specific date
+GET {{baseUrl}}/provider/{{providerId}}/availability?date=2026-05-20
+
+###
+
+### Get agent trace logs for a specific provider
+GET {{baseUrl}}/provider/{{providerId}}/traces
+
+###
+
+### Get all traces for a session (via provider routes)
+GET {{baseUrl}}/provider/traces/{{sessionId}}
+
+###
 ### ═══════════════════════════════════════════════════════════
 ### AVAILABILITY
 ### ═══════════════════════════════════════════════════════════
 
-### Get availability (all providers or filter by provider + date)
+### Get availability — optionally filter by providerId and/or date
 GET {{baseUrl}}/availability?providerId={{providerId}}&date=2026-05-20
+
+###
+
+### Get a single availability slot by ID
+GET {{baseUrl}}/availability/{{slotId}}
 
 ###
 
@@ -194,8 +328,8 @@ Content-Type: application/json
 
 ###
 
-### Mark a slot as booked
-PATCH {{baseUrl}}/availability/<slot-id>
+### Mark a slot as booked (or update any field)
+PATCH {{baseUrl}}/availability/{{slotId}}
 Content-Type: application/json
 
 {
@@ -203,11 +337,16 @@ Content-Type: application/json
 }
 
 ###
+
+### Delete an availability slot
+DELETE {{baseUrl}}/availability/{{slotId}}
+
+###
 ### ═══════════════════════════════════════════════════════════
 ### BOOKINGS  (all routes require Authorization)
 ### ═══════════════════════════════════════════════════════════
 
-### Get the logged-in user's bookings  ← CHANGED from /user/:userId
+### Get all bookings for the logged-in user
 GET {{baseUrl}}/booking/user/me
 Authorization: Bearer {{token}}
 
@@ -219,7 +358,42 @@ Authorization: Bearer {{token}}
 
 ###
 
-### Update booking lifecycle status  (provider calls this)
+### Create a booking (normally done via AI chat — this is for direct/admin use)
+POST {{baseUrl}}/booking
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "user_id": "{{userId}}",
+  "provider_id": "{{providerId}}",
+  "session_id": "{{sessionId}}",
+  "user_request": "AC repair",
+  "status": "confirmed",
+  "scheduled_time": "2026-05-20T10:00:00.000Z",
+  "price": 900,
+  "duration_hours": 2
+}
+
+###
+
+### Update a booking (e.g. cancel it)
+PATCH {{baseUrl}}/booking/{{bookingId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "cancelled"
+}
+
+###
+
+### Delete a booking
+DELETE {{baseUrl}}/booking/{{bookingId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Update booking lifecycle status (provider calls this)
 ### Valid statuses: confirmed → en_route → arrived → in_progress → completed → feedback_pending
 PATCH {{baseUrl}}/booking/{{bookingId}}/status
 Content-Type: application/json
@@ -232,13 +406,13 @@ Authorization: Bearer {{token}}
 
 ###
 
-### Submit feedback after service completion
+### Submit feedback after service completion (prefer this over POST /feedback)
 POST {{baseUrl}}/booking/{{bookingId}}/feedback
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "userId": "<user-uuid>",
+  "userId": "{{userId}}",
   "providerId": "{{providerId}}",
   "rating": 5,
   "reviewText": "Bahut acha kaam kiya, time pe aya!",
@@ -246,29 +420,18 @@ Authorization: Bearer {{token}}
 }
 
 ###
-
-### Cancel/update a booking
-PATCH {{baseUrl}}/booking/{{bookingId}}
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-{
-  "status": "cancelled"
-}
-
-###
 ### ═══════════════════════════════════════════════════════════
 ### DISPUTES
 ### ═══════════════════════════════════════════════════════════
 
-### Open a dispute ticket
+### Open a dispute ticket (no auth required)
 ### Valid disputeType values: no_show | quality | price | cancellation | overrun
 POST {{baseUrl}}/dispute
 Content-Type: application/json
 
 {
   "bookingId": "{{bookingId}}",
-  "userId": "<user-uuid>",
+  "userId": "{{userId}}",
   "providerId": "{{providerId}}",
   "disputeType": "quality",
   "description": "Provider ne AC theek nahi kiya, wahi masla baaki hai",
@@ -283,7 +446,23 @@ GET {{baseUrl}}/dispute/{{disputeId}}
 ###
 
 ### Get all disputes for a user
-GET {{baseUrl}}/dispute/user/<user-uuid>
+GET {{baseUrl}}/dispute/user/{{userId}}
+
+###
+
+### Update a dispute (e.g. resolve it)
+PATCH {{baseUrl}}/dispute/{{disputeId}}
+Content-Type: application/json
+
+{
+  "status": "resolved",
+  "resolution": "Refund issued"
+}
+
+###
+
+### Delete a dispute
+DELETE {{baseUrl}}/dispute/{{disputeId}}
 
 ###
 ### ═══════════════════════════════════════════════════════════
@@ -292,6 +471,11 @@ GET {{baseUrl}}/dispute/user/<user-uuid>
 
 ### Get reputation for a provider
 GET {{baseUrl}}/reputation?providerId={{providerId}}
+
+###
+
+### Get a specific reputation record by ID
+GET {{baseUrl}}/reputation/{{reputationId}}
 
 ###
 
@@ -308,21 +492,23 @@ Content-Type: application/json
 }
 
 ###
-### ═══════════════════════════════════════════════════════════
-### TRACES  (agent debug logs)
-### ═══════════════════════════════════════════════════════════
 
-### List all traces (limit 50)
-GET {{baseUrl}}/traces
+### Update a reputation record
+PATCH {{baseUrl}}/reputation/{{reputationId}}
+Content-Type: application/json
 
-###
-
-### List traces for a specific session
-GET {{baseUrl}}/traces?sessionId={{sessionId}}
+{
+  "positive_reviews": 11
+}
 
 ###
+
+### Delete a reputation record
+DELETE {{baseUrl}}/reputation/{{reputationId}}
+
+###
 ### ═══════════════════════════════════════════════════════════
-### FEEDBACK  (direct table, bypasses reputation engine)
+### FEEDBACK  (direct table — prefer POST /booking/:id/feedback)
 ### ═══════════════════════════════════════════════════════════
 
 ### List all feedback
@@ -330,245 +516,195 @@ GET {{baseUrl}}/feedback
 
 ###
 
-### Submit feedback directly (prefer POST /booking/:id/feedback instead)
+### Filter feedback by provider
+GET {{baseUrl}}/feedback?providerId={{providerId}}
+
+###
+
+### Get a single feedback record by ID
+GET {{baseUrl}}/feedback/{{feedbackId}}
+
+###
+
+### Submit feedback directly (bypasses reputation engine)
 POST {{baseUrl}}/feedback
 Content-Type: application/json
 
 {
   "booking_id": "{{bookingId}}",
-  "user_id": "<user-uuid>",
+  "user_id": "{{userId}}",
   "provider_id": "{{providerId}}",
   "rating": 4,
   "review_text": "Good service overall"
 }
 
 ###
-### ═══════════════════════════════════════════════════════════
-### USERS
-### ═══════════════════════════════════════════════════════════
 
-### List all users
-GET {{baseUrl}}/users
+### Update a feedback record
+PATCH {{baseUrl}}/feedback/{{feedbackId}}
+Content-Type: application/json
+
+{
+  "review_text": "Updated: Great service!"
+}
 
 ###
 
-### Create a user profile (called after Supabase Auth signup)
-POST {{baseUrl}}/users
-Content-Type: application/json
+### Delete a feedback record
+DELETE {{baseUrl}}/feedback/{{feedbackId}}
 
-{
-  "full_name": "Test Customer",
-  "phone": "0311-9876543",
-  "email": "customer@test.com",
-  "home_area": "DHA"
-}
+###
+### ═══════════════════════════════════════════════════════════
+### TRACES  (agent debug logs)
+### ═══════════════════════════════════════════════════════════
 
-
-### Health Check
-GET http://127.0.0.1:3000/health
-
-### -----------------------------------------------------
-### AUTH — Step 1: Login to get JWT access_token
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "user1@digitalkaam.com",
-  "password": "Password123!"
-}
-
-### Step 2: Chat with AI (replace YOUR_TOKEN with access_token from login)
-# @name chatRequest
-POST {{baseUrl}}/chat
-Content-Type: application/json
-Authorization: Bearer YOUR_TOKEN_HERE
-
-{
-  "sessionId": "session-abc-001",
-  "message": "I need an electrician in Gulshan"
-}
-
-### Step 3: View full message history for a session
-GET {{baseUrl}}/chat/history?sessionId=session-abc-001
-Authorization: Bearer YOUR_TOKEN_HERE
-
-### View all past sessions for this user
-GET {{baseUrl}}/chat/history
-Authorization: Bearer YOUR_TOKEN_HERE
-
-### -----------------------------------------------------
-### CHAT WITH AI ORCHESTRATOR
-### -----------------------------------------------------
-
-### Talk to the ADK Orchestrator
-POST {{baseUrl}}/chat
-Content-Type: application/json
-
-{
-  "sessionId": "test-session-123",
-  "message": "I need an electrician in Gulshan"
-}
-
-### Talk to the ADK Orchestrator (Follow-up)
-POST {{baseUrl}}/chat
-Content-Type: application/json
-
-{
-  "sessionId": "test-session-123",
-  "message": "What will be the price for fixing a fan?"
-}
-
-### -----------------------------------------------------
-### 1. PROVIDERS
-### -----------------------------------------------------
-
-### List all providers
-GET {{baseUrl}}/provider
-
-### Create a new provider
-POST {{baseUrl}}/provider
-Content-Type: application/json
-
-{
-  "name": "Test Electrician",
-  "phone": "0300-1234567",
-  "email": "test@digitalkaam.pk",
-  "service_type": "Electrician",
-  "specialization": "General Wiring",
-  "experience_years": 5,
-  "hourly_rate": 800,
-  "area": "Gulshan",
-  "status": "active"
-}
-
-### -----------------------------------------------------
-### 2. USERS
-### -----------------------------------------------------
-
-### List all users
-GET {{baseUrl}}/users
-
-### Create a new user
-POST {{baseUrl}}/users
-Content-Type: application/json
-
-{
-  "full_name": "Test Customer",
-  "phone": "0311-9876543",
-  "email": "customer@test.com",
-  "home_area": "DHA"
-}
-
-### -----------------------------------------------------
-### 3. BOOKINGS
-### -----------------------------------------------------
-
-### List all bookings for user
-GET {{baseUrl}}/booking/user/<user-id>
-
-### Create a booking
-POST {{baseUrl}}/booking
-Content-Type: application/json
-
-{
-  "provider_id": "<provider-id-here>",
-  "user_id": "<user-id-here>",
-  "user_request": "Need my AC fixed urgently",
-  "status": "confirmed",
-  "price": 1500
-}
-
-### -----------------------------------------------------
-### 4. DISPUTES
-### -----------------------------------------------------
-
-### List disputes for a user
-GET {{baseUrl}}/dispute/user/<user-id>
-
-### Create a dispute
-POST {{baseUrl}}/dispute
-Content-Type: application/json
-
-{
-  "bookingId": "<booking-id-here>",
-  "userId": "<user-id-here>",
-  "providerId": "<provider-id-here>",
-  "disputeType": "quality",
-  "description": "Provider did not fix the issue properly"
-}
-
-### -----------------------------------------------------
-### 5. AVAILABILITY
-### -----------------------------------------------------
-
-### Get availability for a provider
-GET {{baseUrl}}/availability?providerId=<provider-uuid>
-
-### Create availability slot
-POST {{baseUrl}}/availability
-Content-Type: application/json
-
-{
-  "provider_id": "<provider-id-here>",
-  "date": "2026-05-20",
-  "start_time": "10:00",
-  "end_time": "12:00",
-  "is_booked": false
-}
-
-### -----------------------------------------------------
-### 6. REPUTATION
-### -----------------------------------------------------
-
-### List reputation for a provider
-GET {{baseUrl}}/reputation?providerId=<provider-uuid>
-
-### Create reputation record
-POST {{baseUrl}}/reputation
-Content-Type: application/json
-
-{
-  "provider_id": "<provider-id-here>",
-  "positive_reviews": 10,
-  "negative_reviews": 1,
-  "complaints": 0,
-  "disputes": 0
-}
-
-### -----------------------------------------------------
-### 7. TRACES
-### -----------------------------------------------------
-
-### List traces
+### List all traces (latest 50)
 GET {{baseUrl}}/traces
 
-### Create a trace record
+###
+
+### Filter traces by sessionId
+GET {{baseUrl}}/traces?sessionId={{sessionId}}
+
+###
+
+### Get a single trace by ID
+GET {{baseUrl}}/traces/{{sessionId}}
+
+###
+
+### Create a trace record (normally done automatically by agents)
 POST {{baseUrl}}/traces
 Content-Type: application/json
 
 {
-  "session_id": "session-123",
-  "agent": "IntentAgent",
-  "input": {"text": "fix AC"},
-  "output": {"intent": "ac_repair"},
-  "confidence_score": 0.95
+  "session_id": "{{sessionId}}",
+  "agent": "OrchestratorAgent",
+  "action": "test",
+  "input": "test input",
+  "output": "test output"
 }
 
-### -----------------------------------------------------
-### 8. FEEDBACK
-### -----------------------------------------------------
+###
 
-### List feedback
-GET {{baseUrl}}/feedback
+### Delete a trace record
+DELETE {{baseUrl}}/traces/{{sessionId}}
 
-### Create feedback
-POST {{baseUrl}}/feedback
+###
+### ═══════════════════════════════════════════════════════════
+### USERS
+### ═══════════════════════════════════════════════════════════
+
+### List all user profiles (admin use)
+GET {{baseUrl}}/users
+
+###
+
+### Get a single user profile by ID
+GET {{baseUrl}}/users/{{userId}}
+
+###
+
+### Create a user profile with Supabase auth (testing/seed — prefer /auth/signup)
+POST {{baseUrl}}/users
 Content-Type: application/json
 
 {
-  "booking_id": "<booking-id-here>",
-  "user_id": "<user-id-here>",
-  "provider_id": "<provider-id-here>",
-  "rating": 5,
-  "review_text": "Great service!"
+  "full_name": "Test Customer",
+  "phone": "0311-9876543",
+  "email": "customer@test.com",
+  "home_area": "DHA"
+}
+
+###
+
+### Update a user profile
+PATCH {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+
+{
+  "home_area": "Clifton",
+  "phone": "0333-1234567"
+}
+
+###
+
+### Delete a user profile
+DELETE {{baseUrl}}/users/{{userId}}
+
+###
+### ═══════════════════════════════════════════════════════════
+### ADMIN  (all routes require Authorization)
+### ═══════════════════════════════════════════════════════════
+
+### Get all platform config values
+### Keys: platform_fee_fixed | platform_fee_percent | visit_fee |
+###       urgency_fee_high | urgency_fee_medium | loyalty_discount_cap
+GET {{baseUrl}}/admin/platform-config
+Authorization: Bearer {{token}}
+
+###
+
+### Update platform_fee_fixed (flat PKR fee per booking)
+PUT {{baseUrl}}/admin/platform-config/platform_fee_fixed
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "100"
+}
+
+###
+
+### Update platform_fee_percent (% of service subtotal)
+PUT {{baseUrl}}/admin/platform-config/platform_fee_percent
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "5.5"
+}
+
+###
+
+### Update visit_fee (provider callout/visit fee)
+PUT {{baseUrl}}/admin/platform-config/visit_fee
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "200"
+}
+
+###
+
+### Update urgency_fee_high (same-day emergency surcharge)
+PUT {{baseUrl}}/admin/platform-config/urgency_fee_high
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "500"
+}
+
+###
+
+### Update urgency_fee_medium (medium urgency surcharge)
+PUT {{baseUrl}}/admin/platform-config/urgency_fee_medium
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "250"
+}
+
+###
+
+### Update loyalty_discount_cap (max loyalty discount per booking)
+PUT {{baseUrl}}/admin/platform-config/loyalty_discount_cap
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "value": "150"
 }
