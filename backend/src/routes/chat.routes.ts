@@ -73,28 +73,75 @@ router.post('/', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'message and sessionId are required' })
   }
 
+  console.log(`\n[CHAT] POST /api/chat — userId='${userId}' sessionId='${sessionId}'`)
+
   try {
+    // ── 0. Ensure user_profiles row exists (required by FK on chat_sessions) ──
+    // Without this, session insert fails silently if the user was created via
+    // Supabase Auth but never inserted into user_profiles.
+    const { error: profileUpsertError } = await supabase
+      .from('user_profiles')
+      .upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true })
+    if (profileUpsertError) {
+      console.error('[CHAT] ⚠ user_profiles upsert failed (non-fatal):', profileUpsertError.message)
+    } else {
+      console.log(`[CHAT] user_profiles upsert OK for userId='${userId}'`)
+    }
+
     // ── 1. Load or initialize session state from DB ──────────────────────────
-    let { data: sessionData } = await supabase
+    console.log(`[CHAT] Step 1 — Looking up session '${sessionId}' in DB...`)
+    let { data: sessionData, error: sessionLookupError } = await supabase
       .from('chat_sessions')
       .select('*')
       .eq('session_id', sessionId)
       .single()
 
+    if (sessionLookupError && sessionLookupError.code !== 'PGRST116') {
+      console.error('[CHAT] Session lookup error:', sessionLookupError)
+    }
+    console.log(`[CHAT] Session lookup result: ${sessionData ? 'FOUND (turn_count=' + sessionData.turn_count + ')' : 'NOT FOUND'}`)
+
     if (!sessionData) {
       // First message in this session — create the session record
-      const { data: newSession } = await supabase
+      console.log(`[CHAT] Step 1b — Creating new session record...`)
+      const { data: newSession, error: insertError } = await supabase
         .from('chat_sessions')
-        .insert({ session_id: sessionId, user_id: userId, summary: '', turn_count: 0, booking_ids: [] })
+        .insert({ session_id: sessionId, user_id: userId, summary: '', turn_count: 0 })
         .select()
         .single()
-      sessionData = newSession
+      if (insertError) {
+        console.error('[CHAT] ❌ Session INSERT failed:', insertError.code, insertError.message)
+        // If it failed due to booking_ids column, try without it
+        if (insertError.code === '42703') {
+          console.log('[CHAT] Retrying session insert without booking_ids...')
+          const { data: retrySession, error: retryError } = await supabase
+            .from('chat_sessions')
+            .insert({ session_id: sessionId, user_id: userId, summary: '', turn_count: 0 })
+            .select()
+            .single()
+          if (retryError) {
+            console.error('[CHAT] ❌ Retry also failed:', retryError.message)
+            return res.status(500).json({ error: `Session creation failed: ${retryError.message}` })
+          }
+          sessionData = retrySession
+        } else if (insertError.code === '23503') {
+          // FK violation — user_profiles row is truly missing
+          console.error('[CHAT] ❌ FK violation: user_profiles row missing for userId:', userId)
+          return res.status(500).json({ error: `User profile not found. Run seed or create profile for userId: ${userId}` })
+        } else {
+          return res.status(500).json({ error: `Session creation failed: ${insertError.message}` })
+        }
+      } else {
+        sessionData = newSession
+        console.log(`[CHAT] ✅ New session created: '${sessionId}'`)
+      }
     }
 
     const currentTurnCount: number = sessionData?.turn_count || 0
     const existingSummary: string = sessionData?.summary || ''
 
     // ── 2. Load recent messages from DB (LAST N, not first N) ────────────────
+    console.log(`[CHAT] Step 2 — Loading last ${WINDOW_SIZE} messages for session '${sessionId}'...`)
     // FIX: Query descending to get the most recent messages, then reverse
     const { data: recentMessagesDesc } = await supabase
       .from('chat_messages')
@@ -105,6 +152,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Reverse to chronological order for the agent's context
     const recentMessages = recentMessagesDesc ? [...recentMessagesDesc].reverse() : []
+    console.log(`[CHAT] Step 2 — Loaded ${recentMessages.length} recent messages`)
 
     // ── 3. Maybe trigger summarization ───────────────────────────────────────
     let activeSummary = existingSummary
@@ -208,7 +256,9 @@ router.post('/', async (req: Request, res: Response) => {
     })
 
     // ── 6. Run the Orchestrator ───────────────────────────────────────────────
+    console.log(`[CHAT] Step 6 — Running OrchestratorAgent for session '${sessionId}'...`)
     const responseText = await agent.run(message)
+    console.log(`[CHAT] Step 6 — Agent response length: ${responseText.length} chars`)
 
     // ── 7. Persist the AI's response ─────────────────────────────────────────
     await supabase.from('chat_messages').insert({
@@ -235,7 +285,7 @@ router.post('/', async (req: Request, res: Response) => {
     })
 
   } catch (error: any) {
-    console.error('Chat error:', error)
+    console.error('[CHAT] ❌ Unhandled error in POST /api/chat:', error)
     return res.status(500).json({ error: error.message })
   }
 })
@@ -249,46 +299,80 @@ router.get('/history', async (req: Request, res: Response) => {
   const userId = req.user!.id
   const { sessionId } = req.query
 
+  console.log(`[CHAT] GET /history — userId='${userId}' sessionId='${sessionId || '(all sessions)'}'`)
+
   try {
     if (sessionId) {
-      // Verify ownership via the session record first
+      // ── Step 1: Fetch session by session_id ONLY (avoid booking_ids issue & user_id mismatch in query)
       const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
-        .select('summary, turn_count, last_active, booking_ids')
-        .eq('session_id', sessionId)
-        .eq('user_id', userId)
+        .select('user_id, summary, turn_count, last_active')
+        .eq('session_id', sessionId as string)
         .single()
 
-      if (sessionError && sessionError.code !== 'PGRST116') {
+      console.log(`[CHAT] GET /history — DB lookup: session found=${!!session} dbUserId='${session?.user_id}' jwtUserId='${userId}' err=${sessionError?.code || 'none'} msg=${sessionError?.message || ''}`)
+
+      if (sessionError) {
+        if (sessionError.code === 'PGRST116') {
+          return res.status(404).json({ error: `Session '${sessionId}' not found in database. Start a conversation first via POST /api/chat.` })
+        }
         return res.status(500).json({ error: sessionError.message })
       }
-      // If the session doesn't exist or belongs to another user, return 404
-      if (!session) {
-        return res.status(404).json({ error: 'Session not found or access denied.' })
+
+      // ── Step 2: Check ownership in code (not in DB query)
+      if (session.user_id !== userId) {
+        console.warn(`[CHAT] GET /history — OWNERSHIP MISMATCH: session belongs to '${session.user_id}', JWT is '${userId}'`)
+        return res.status(403).json({ error: 'Access denied: this session belongs to a different user.' })
       }
 
-      // Fetch messages by session_id only — ownership already verified above
+      // ── Step 3: Fetch messages
       const { data: messages, error: msgError } = await supabase
         .from('chat_messages')
         .select('id, role, content, created_at')
-        .eq('session_id', sessionId)
+        .eq('session_id', sessionId as string)
         .order('created_at', { ascending: true })
 
-      if (msgError) return res.status(500).json({ error: msgError.message })
+      if (msgError) {
+        console.error('[CHAT] GET /history — messages fetch error:', msgError)
+        return res.status(500).json({ error: msgError.message })
+      }
 
-      return res.json({ sessionId, messages, summary: session.summary || '', turnCount: session.turn_count || 0, bookingIds: session.booking_ids || [] })
+      // ── Step 4: Try to fetch booking_ids (optional — column may not exist yet)
+      let bookingIds: string[] = []
+      try {
+        const { data: sessionFull } = await supabase
+          .from('chat_sessions')
+          .select('booking_ids')
+          .eq('session_id', sessionId as string)
+          .single()
+        bookingIds = sessionFull?.booking_ids || []
+      } catch { /* booking_ids column may not exist — non-fatal */ }
+
+      console.log(`[CHAT] GET /history — returning ${messages?.length || 0} messages`)
+      return res.json({
+        sessionId,
+        messages: messages || [],
+        summary: session.summary || '',
+        turnCount: session.turn_count || 0,
+        bookingIds
+      })
     } else {
       // Return all sessions for this user (for a "Past Conversations" screen)
       const { data: sessions, error } = await supabase
         .from('chat_sessions')
-        .select('session_id, summary, turn_count, last_active, booking_ids')
+        .select('session_id, summary, turn_count, last_active')
         .eq('user_id', userId)
         .order('last_active', { ascending: false })
 
-      if (error) return res.status(500).json({ error: error.message })
-      return res.json({ sessions })
+      if (error) {
+        console.error('[CHAT] GET /history (all sessions) error:', error)
+        return res.status(500).json({ error: error.message })
+      }
+      console.log(`[CHAT] GET /history — returning ${sessions?.length || 0} sessions for user`)
+      return res.json({ sessions: sessions || [] })
     }
   } catch (error: any) {
+    console.error('[CHAT] ❌ GET /history unhandled error:', error)
     return res.status(500).json({ error: error.message })
   }
 })
