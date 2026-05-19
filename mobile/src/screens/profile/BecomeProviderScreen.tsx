@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/store/authStore';
@@ -58,11 +59,12 @@ export function BecomeProviderScreen({
   navigation,
 }: ProfileScreenProps<'BecomeProvider'>) {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
   const langInput = useLocalizedInputProps();
-  const { userId, profile, setProviderProfile, toggleProviderMode } =
+  const { userId, profile, setProviderProfile, setProviderMode } =
     useAuthStore();
   const { showToast } = useUIStore();
 
@@ -109,7 +111,7 @@ export function BecomeProviderScreen({
 
       setProviderProfile(provider);
       showToast(t('provider.success'), 'success');
-      toggleProviderMode();
+      setProviderMode(true);
     } catch (err: any) {
       const msg = String(err?.message ?? '');
       if (msg.includes('409') || /already.*provider/i.test(msg)) {
@@ -127,14 +129,13 @@ export function BecomeProviderScreen({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['5xl'] }}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient

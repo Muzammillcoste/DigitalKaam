@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { authApi } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
+import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -72,6 +73,8 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
           showToast(error.message, 'error');
           return;
         }
+        // Always land on a fresh conversation right after sign-up.
+        useChatStore.getState().newSession();
         setSession(res.userId, res.access_token);
       } else {
         showToast('Account created! Please sign in.', 'success');
@@ -93,7 +96,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[

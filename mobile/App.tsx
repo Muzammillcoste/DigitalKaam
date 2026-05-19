@@ -15,7 +15,8 @@ import { useIsDark } from './src/theme';
 import { api } from './utils/api';
 
 export default function App() {
-  const { initialize, userId, setProfile, setProviderProfile } = useAuthStore();
+  const { initialize, userId, setProfile, setProviderProfile, setProviderMode } =
+    useAuthStore();
   const { showToast } = useUIStore();
   const isDark = useIsDark();
 
@@ -31,9 +32,13 @@ export default function App() {
       .catch(() => {});
 
     // GET /api/provider/me — 404 simply means "not a provider yet" (swallowed).
+    // If the signed-in user IS a provider, open straight into Provider mode.
     api.provider.me()
       .then((p: any) => {
-        if (p) setProviderProfile(p);
+        if (p) {
+          setProviderProfile(p);
+          setProviderMode(true);
+        }
       })
       .catch(() => {});
 

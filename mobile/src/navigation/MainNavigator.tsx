@@ -28,6 +28,7 @@ import { PermissionsScreen } from '@/screens/settings/PermissionsScreen';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
 import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
 import { BecomeProviderScreen } from '@/screens/profile/BecomeProviderScreen';
+import { ProviderEditScreen } from '@/screens/provider/ProviderEditScreen';
 import { ProviderDashboardScreen } from '@/screens/provider/ProviderDashboardScreen';
 import { ProviderJobDetailScreen } from '@/screens/provider/ProviderJobDetailScreen';
 
@@ -76,17 +77,17 @@ function BookingsNavigator() {
       <BookingsStack.Screen
         name="BookingDetail"
         component={BookingDetailScreen}
-        options={{ title: 'Booking Details' }}
+        options={{ title: t('bookings.bookingNumber') }}
       />
       <BookingsStack.Screen
         name="Feedback"
         component={FeedbackScreen}
-        options={{ title: 'Leave Feedback' }}
+        options={{ title: t('bookings.rateService') }}
       />
       <BookingsStack.Screen
         name="Dispute"
         component={DisputeScreen}
-        options={{ title: 'Open Dispute' }}
+        options={{ title: t('bookings.reportProblem') }}
       />
     </BookingsStack.Navigator>
   );
@@ -119,7 +120,15 @@ function SettingsNavigator({ withMenu = true }: { withMenu?: boolean }) {
       <SettingsStack.Screen
         name="BecomeProvider"
         component={BecomeProviderScreen}
-        options={{ title: t('drawer.startEarning') }}
+        options={{
+          title: t('drawer.startEarning'),
+          headerLeft: withMenu ? () => <HeaderMenuButton /> : undefined,
+        }}
+      />
+      <SettingsStack.Screen
+        name="ProviderEdit"
+        component={ProviderEditScreen}
+        options={{ title: t('provider.editTitle') }}
       />
       <SettingsStack.Screen
         name="Permissions"

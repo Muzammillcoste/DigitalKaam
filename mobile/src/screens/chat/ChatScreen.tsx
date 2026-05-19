@@ -16,6 +16,7 @@ import { useChatStore } from '@/store/chatStore';
 import { useTranslation } from '@/i18n';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { ChatSkeleton } from '@/components/chat/ChatSkeleton';
 import { ChatInputBar } from '@/components/chat/ChatInputBar';
 import {
   Typography,
@@ -31,7 +32,8 @@ export function ChatScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
-  const { messages, isTyping, sendMessage, newSession } = useChatStore();
+  const { messages, isTyping, isLoadingSession, sendMessage, newSession } =
+    useChatStore();
 
   const headerDir = isRTL ? 'row-reverse' : 'row';
 
@@ -71,32 +73,36 @@ export function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
-          inverted
-          contentContainerStyle={styles.listContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          ListFooterComponent={
-            messages.length === 0 ? (
-              <View style={styles.welcome}>
-                <View style={styles.welcomeCard}>
-                  <Text
-                    style={[
-                      styles.welcomeText,
-                      { textAlign: isRTL ? 'right' : 'left' },
-                    ]}
-                  >
-                    {t('chat.welcome')}
-                  </Text>
+        {isLoadingSession ? (
+          <ChatSkeleton />
+        ) : (
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <MessageBubble message={item} />}
+            inverted
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            ListFooterComponent={
+              messages.length === 0 ? (
+                <View style={styles.welcome}>
+                  <View style={styles.welcomeCard}>
+                    <Text
+                      style={[
+                        styles.welcomeText,
+                        { textAlign: isRTL ? 'right' : 'left' },
+                      ]}
+                    >
+                      {t('chat.welcome')}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ) : null
-          }
-          ListHeaderComponent={isTyping ? <TypingIndicator /> : null}
-        />
+              ) : null
+            }
+            ListHeaderComponent={isTyping ? <TypingIndicator /> : null}
+          />
+        )}
 
         <ChatInputBar onSend={sendMessage} disabled={isTyping} />
       </KeyboardAvoidingView>

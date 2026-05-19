@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBookingStore } from '@/store/bookingStore';
 import { useAuthStore } from '@/store/authStore';
 import { BookingCard } from '@/components/booking/BookingCard';
@@ -21,7 +20,6 @@ const TABS = [
 ];
 
 export function BookingsListScreen({ navigation }: BookingsScreenProps<'BookingsList'>) {
-  const insets = useSafeAreaInsets();
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { userId } = useAuthStore();
@@ -46,7 +44,7 @@ export function BookingsListScreen({ navigation }: BookingsScreenProps<'Bookings
   if (isLoading && bookings.length === 0) return <Spinner fullScreen />;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <View style={styles.tabs}>
         {TABS.map((tab, i) => (
           <Pressable key={tab.label} style={styles.tab} onPress={() => setActiveTab(i)}>

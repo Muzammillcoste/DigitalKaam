@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   Modal,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +26,7 @@ import {
   useThemedStyles,
   type ColorPalette,
 } from '@/theme';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { SettingsScreenProps } from '@/navigation/types';
 
 type SheetKind = 'color' | 'language' | null;
@@ -36,11 +36,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
-  const { logout } = useAuthStore();
+  const { logout, providerProfile } = useAuthStore();
   const { showToast } = useUIStore();
   const { language, colorMode, setLanguage, setColorMode } = useSettingsStore();
 
   const [sheet, setSheet] = useState<SheetKind>(null);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
@@ -56,18 +57,10 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
     ur: t('settings.language.urdu'),
   };
 
-  const handleLogout = () => {
-    Alert.alert(t('settings.logout'), '', [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('settings.logout'),
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          showToast(t('settings.logoutSuccess'), 'success');
-        },
-      },
-    ]);
+  const confirmLogout = async () => {
+    setLogoutOpen(false);
+    await logout();
+    showToast(t('settings.logoutSuccess'), 'success');
   };
 
   const Row = ({
@@ -127,6 +120,13 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
             label={t('settings.profile')}
             onPress={() => navigation.navigate('Profile')}
           />
+          {!!providerProfile && (
+            <Row
+              icon="construct-outline"
+              label={t('settings.providerProfile')}
+              onPress={() => navigation.navigate('ProviderEdit')}
+            />
+          )}
           <Row
             icon="shield-checkmark-outline"
             label={t('settings.permissions')}
@@ -150,7 +150,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
           <Row
             icon="log-out-outline"
             label={t('settings.logout')}
-            onPress={handleLogout}
+            onPress={() => setLogoutOpen(true)}
             danger
           />
         </View>
@@ -228,6 +228,18 @@ export function SettingsScreen({ navigation }: SettingsScreenProps<'Settings'>) 
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ConfirmModal
+        visible={logoutOpen}
+        title={t('settings.logoutConfirmTitle')}
+        message={t('settings.logoutConfirmMessage')}
+        confirmLabel={t('settings.logout')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        icon="log-out-outline"
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </View>
   );
 }

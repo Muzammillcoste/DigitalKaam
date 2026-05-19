@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { api } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -12,6 +13,7 @@ import type { ProfileScreenProps } from '@/navigation/types';
 
 export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfile'>) {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const styles = useThemedStyles(makeStyles);
   const { t } = useTranslation();
   const langInput = useLocalizedInputProps();
@@ -66,7 +68,8 @@ export function EditProfileScreen({ navigation }: ProfileScreenProps<'EditProfil
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <ScrollView
         style={styles.container}

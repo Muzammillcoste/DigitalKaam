@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import {
-  Typography,
   Spacing,
   Radius,
   useColors,
@@ -9,7 +8,6 @@ import {
   type ColorPalette,
 } from '@/theme';
 import { Avatar } from '@/components/ui/Avatar';
-import { useTranslation } from '@/i18n';
 
 function Dot({ delay, color }: { delay: number; color: string }) {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -47,7 +45,6 @@ function Dot({ delay, color }: { delay: number; color: string }) {
 export function TypingIndicator() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const { t } = useTranslation();
 
   return (
     <View style={styles.row}>
@@ -58,7 +55,6 @@ export function TypingIndicator() {
           <Dot delay={150} color={c.primary} />
           <Dot delay={300} color={c.primary} />
         </View>
-        <Text style={styles.label}>{t('chat.typing')}</Text>
       </View>
     </View>
   );
@@ -84,5 +80,4 @@ const makeStyles = (c: ColorPalette) =>
       gap: Spacing.sm,
     },
     dots: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-    label: { ...Typography.caption, color: c.textSecondary },
   });

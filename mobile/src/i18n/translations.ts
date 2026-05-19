@@ -30,13 +30,15 @@ const en = {
   'chat.subtitle': 'Always ready to help',
   'chat.inputPlaceholder': 'Type or speak your request…',
   'chat.welcome':
-    "Assalam-o-Alaikum! 👋\n\nI'm your DigitalKaam assistant. Tell me what service you need — for example:\n\n\"Mera AC kharab hai, Gulshan mein kal subah mistri chahiye\"\n\nor\n\n\"I need a plumber in DHA today afternoon\"",
+    "Assalam-o-Alaikum! 👋\n\nI'm your DigitalKaam assistant. Tell me what service you need — for example:\n\n\"Mera AC kharab hai ya Gulshan mein kal subah mistri chahiye\"\n\nor\n\n\"I need a plumber in DHA today afternoon\"",
   'chat.connectionError':
     'Sorry, I could not connect to the service. Please try again.',
   'chat.typing': 'DigitalKaam is typing…',
   'chat.transcribing': 'Transcribing your voice…',
   'chat.voiceError': 'Could not transcribe the recording. Please try again.',
   'chat.micDenied': 'Microphone permission denied',
+  'chat.voiceUnavailable':
+    'Voice input needs the full app build (not available in Expo Go).',
 
   // ── Settings ──────────────────────────────────────────────
   'settings.title': 'Settings',
@@ -46,6 +48,10 @@ const en = {
   'settings.language': 'Language',
   'settings.logout': 'Logout',
   'settings.logoutSuccess': 'Signed out successfully',
+  'settings.logoutConfirmTitle': 'Log out?',
+  'settings.logoutConfirmMessage':
+    'You will need to sign in again to use DigitalKaam.',
+  'settings.providerProfile': 'Service Provider Profile',
   'settings.colorMode.light': 'Light',
   'settings.colorMode.dark': 'Dark',
   'settings.colorMode.system': 'System',
@@ -67,10 +73,10 @@ const en = {
   // ── Profile ───────────────────────────────────────────────
   'profile.title': 'Profile',
   'profile.editProfile': 'Edit Profile',
-  'profile.becomeProvider': 'Become a Provider',
-  'profile.switchToProvider': 'Switch to Provider Mode',
+  'profile.becomeProvider': 'Become a Service Provider',
+  'profile.switchToProvider': 'Switch to Service Provider Mode',
   'profile.switchToCustomer': 'Switch to Customer Mode',
-  'profile.switchedToProvider': 'Switched to Provider Mode',
+  'profile.switchedToProvider': 'Switched to Service Provider Mode',
   'profile.switchedToCustomer': 'Switched to Customer Mode',
   'profile.welcome': 'Welcome',
   'profile.fullName': 'Full Name',
@@ -81,7 +87,7 @@ const en = {
   'profile.updateFailed': 'Failed to update profile',
 
   // ── Become a Provider ─────────────────────────────────────
-  'provider.registerTitle': 'Register as Provider',
+  'provider.registerTitle': 'Register as Service Provider',
   'provider.registerSubtitle':
     'Earn money by offering your professional services to customers in your area.',
   'provider.serviceType': 'Service Type',
@@ -107,11 +113,31 @@ const en = {
   'provider.rateInvalid': 'Hourly rate must be between 100 and 50000 PKR',
   'provider.success': 'Congratulations! You are now a Service Provider! 🎉',
   'provider.failed': 'Registration failed. Please try again.',
-  'provider.alreadyProvider': 'You already have a provider profile.',
+  'provider.alreadyProvider': 'You already have a service provider profile.',
+
+  // ── Edit Service Provider Profile ─────────────────────────
+  'provider.editTitle': 'Service Details',
+  'provider.editSubtitle': 'Keep your service profile up to date.',
+  'provider.statusLabel': 'Availability',
+  'provider.statusActive': 'Active — accepting jobs',
+  'provider.statusInactive': 'Inactive — not accepting jobs',
+  'provider.saveSuccess': 'Service details updated!',
+  'provider.saveFailed': 'Could not update service details',
+  'provider.loadFailed': 'Could not load your service profile',
 
   // ── Bookings ──────────────────────────────────────────────
   'bookings.title': 'My Bookings',
   'bookings.empty': 'No bookings yet',
+  'bookings.bookingNumber': 'Booking',
+  'bookings.serviceProvider': 'Service Provider',
+  'bookings.serviceRequest': 'Service Request',
+  'bookings.bookedOn': 'Booked on {date}',
+  'bookings.status': 'Status',
+  'bookings.reportProblem': 'Report a Problem',
+  'bookings.rateService': 'Rate Service',
+  'bookings.reportedIssues': 'Reported Issues',
+  'bookings.noIssues': 'No issues reported for this booking.',
+  'bookings.issueUnderReview': 'Under review',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -148,6 +174,8 @@ const ur: Translations = {
   'chat.voiceError':
     'ریکارڈنگ کو متن میں تبدیل نہیں کیا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔',
   'chat.micDenied': 'مائیکروفون کی اجازت مسترد کر دی گئی',
+  'chat.voiceUnavailable':
+    'صوتی ان پٹ کے لیے مکمل ایپ بلڈ درکار ہے (Expo Go میں دستیاب نہیں)۔',
 
   'settings.title': 'ترتیبات',
   'settings.profile': 'پروفائل',
@@ -156,6 +184,10 @@ const ur: Translations = {
   'settings.language': 'زبان',
   'settings.logout': 'لاگ آؤٹ',
   'settings.logoutSuccess': 'کامیابی سے سائن آؤٹ ہو گئے',
+  'settings.logoutConfirmTitle': 'لاگ آؤٹ کریں؟',
+  'settings.logoutConfirmMessage':
+    'ڈیجیٹل کام استعمال کرنے کے لیے آپ کو دوبارہ سائن اِن کرنا ہوگا۔',
+  'settings.providerProfile': 'سروس فراہم کنندہ پروفائل',
   'settings.colorMode.light': 'روشن',
   'settings.colorMode.dark': 'گہرا',
   'settings.colorMode.system': 'سسٹم',
@@ -176,10 +208,10 @@ const ur: Translations = {
 
   'profile.title': 'پروفائل',
   'profile.editProfile': 'پروفائل میں ترمیم',
-  'profile.becomeProvider': 'فراہم کنندہ بنیں',
-  'profile.switchToProvider': 'فراہم کنندہ موڈ پر جائیں',
+  'profile.becomeProvider': 'سروس فراہم کنندہ بنیں',
+  'profile.switchToProvider': 'سروس فراہم کنندہ موڈ پر جائیں',
   'profile.switchToCustomer': 'کسٹمر موڈ پر جائیں',
-  'profile.switchedToProvider': 'فراہم کنندہ موڈ پر منتقل ہو گئے',
+  'profile.switchedToProvider': 'سروس فراہم کنندہ موڈ پر منتقل ہو گئے',
   'profile.switchedToCustomer': 'کسٹمر موڈ پر منتقل ہو گئے',
   'profile.welcome': 'خوش آمدید',
   'profile.fullName': 'پورا نام',
@@ -215,10 +247,30 @@ const ur: Translations = {
   'provider.rateInvalid': 'فی گھنٹہ ریٹ 100 سے 50000 روپے کے درمیان ہونا چاہیے',
   'provider.success': 'مبارک ہو! اب آپ سروس فراہم کنندہ ہیں! 🎉',
   'provider.failed': 'رجسٹریشن ناکام۔ براہ کرم دوبارہ کوشش کریں۔',
-  'provider.alreadyProvider': 'آپ کے پاس پہلے سے فراہم کنندہ پروفائل موجود ہے۔',
+  'provider.alreadyProvider':
+    'آپ کے پاس پہلے سے سروس فراہم کنندہ پروفائل موجود ہے۔',
+
+  'provider.editTitle': 'سروس کی تفصیلات',
+  'provider.editSubtitle': 'اپنی سروس پروفائل کو تازہ رکھیں۔',
+  'provider.statusLabel': 'دستیابی',
+  'provider.statusActive': 'فعال — کام قبول کر رہے ہیں',
+  'provider.statusInactive': 'غیر فعال — کام قبول نہیں کر رہے',
+  'provider.saveSuccess': 'سروس کی تفصیلات اپڈیٹ ہو گئیں!',
+  'provider.saveFailed': 'سروس کی تفصیلات اپڈیٹ نہیں ہو سکیں',
+  'provider.loadFailed': 'آپ کی سروس پروفائل لوڈ نہیں ہو سکی',
 
   'bookings.title': 'میری بکنگز',
   'bookings.empty': 'ابھی کوئی بکنگ نہیں',
+  'bookings.bookingNumber': 'بکنگ',
+  'bookings.serviceProvider': 'سروس فراہم کنندہ',
+  'bookings.serviceRequest': 'سروس کی درخواست',
+  'bookings.bookedOn': '{date} کو بک ہوئی',
+  'bookings.status': 'حیثیت',
+  'bookings.reportProblem': 'مسئلہ رپورٹ کریں',
+  'bookings.rateService': 'سروس کی درجہ بندی کریں',
+  'bookings.reportedIssues': 'رپورٹ شدہ مسائل',
+  'bookings.noIssues': 'اس بکنگ کے لیے کوئی مسئلہ رپورٹ نہیں ہوا۔',
+  'bookings.issueUnderReview': 'جائزہ زیرِ غور',
 };
 
 export const dictionaries: Record<Language, Translations> = { en, ur };

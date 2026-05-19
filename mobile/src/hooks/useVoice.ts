@@ -1,41 +1,39 @@
-import { useState, useCallback, useRef } from 'react';
-import { Audio } from 'expo-av';
-import { File } from 'expo-file-system';
-import { chatApi } from '../../utils/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { translate, type TranslationKey } from '@/i18n';
 
+/**
+ * On-device speech-to-text via `expo-speech-recognition`
+ * (iOS `SFSpeechRecognizer` / Android `SpeechRecognizer`).
+ *
+ * IMPORTANT: this is a native module. It is NOT available in Expo Go — there
+ * `requireNativeModule` throws at import time. We therefore load it through a
+ * guarded `require()` so the rest of the app keeps working in Expo Go; the mic
+ * button simply reports that a development build is required.
+ */
+let ESR: typeof import('expo-speech-recognition') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ESR = require('expo-speech-recognition');
+} catch {
+  ESR = null;
+}
+
+const isVoiceAvailable = !!ESR;
+
 interface VoiceState {
+  /** True while the device is actively listening. */
   isRecording: boolean;
+  /** Kept for API compatibility — on-device STT has no separate step. */
   isTranscribing: boolean;
   error: string | null;
 }
 
-// Map a recording file extension to a Gemini-supported mime type.
-function mimeForUri(uri: string): string {
-  const ext = uri.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'm4a':
-      return 'audio/m4a';
-    case 'mp4':
-      return 'audio/mp4';
-    case 'wav':
-      return 'audio/wav';
-    case 'webm':
-      return 'audio/webm';
-    case 'ogg':
-      return 'audio/ogg';
-    case 'mp3':
-      return 'audio/mpeg';
-    case '3gp':
-      return 'audio/3gpp';
-    default:
-      return 'audio/m4a';
-  }
-}
-
 const tr = (key: TranslationKey) =>
   translate(useSettingsStore.getState().language, key);
+
+/** Map the app language to a platform speech-recognition locale. */
+const localeFor = (lang: string) => (lang === 'ur' ? 'ur-PK' : 'en-US');
 
 export function useVoice(onTranscript: (text: string) => void) {
   const [state, setState] = useState<VoiceState>({
@@ -43,83 +41,97 @@ export function useVoice(onTranscript: (text: string) => void) {
     isTranscribing: false,
     error: null,
   });
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  // Keep the latest callback without re-subscribing native listeners.
+  const onTranscriptRef = useRef(onTranscript);
+  onTranscriptRef.current = onTranscript;
+
+  useEffect(() => {
+    if (!ESR) return;
+    const mod = ESR.ExpoSpeechRecognitionModule;
+
+    const subs = [
+      mod.addListener('start', () =>
+        setState({ isRecording: true, isTranscribing: false, error: null }),
+      ),
+      mod.addListener('end', () =>
+        setState((s) => ({ ...s, isRecording: false, isTranscribing: false })),
+      ),
+      mod.addListener('result', (event: any) => {
+        const text = event?.results?.[0]?.transcript?.trim();
+        if (event?.isFinal && text) onTranscriptRef.current(text);
+      }),
+      mod.addListener('error', (event: any) => {
+        const denied =
+          event?.error === 'not-allowed' ||
+          event?.error === 'service-not-allowed';
+        console.warn(
+          '[useVoice] recognition error:',
+          event?.error,
+          event?.message,
+        );
+        setState({
+          isRecording: false,
+          isTranscribing: false,
+          error: denied ? tr('chat.micDenied') : tr('chat.voiceError'),
+        });
+      }),
+    ];
+
+    return () => subs.forEach((s) => s?.remove?.());
+  }, []);
 
   const startRecording = useCallback(async () => {
+    if (!ESR) {
+      setState((s) => ({ ...s, error: tr('chat.voiceUnavailable') }));
+      return;
+    }
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
+      const mod = ESR.ExpoSpeechRecognitionModule;
+      const perms = await mod.requestPermissionsAsync();
+      if (!perms.granted) {
         setState((s) => ({ ...s, error: tr('chat.micDenied') }));
         return;
       }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      const lang = useSettingsStore.getState().language;
+      mod.start({
+        lang: localeFor(lang),
+        interimResults: false,
+        continuous: false,
       });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      recordingRef.current = recording;
-      setState({ isRecording: true, isTranscribing: false, error: null });
     } catch (err: any) {
-      setState((s) => ({ ...s, error: err.message, isRecording: false }));
+      console.warn('[useVoice] start failed:', err?.message ?? err);
+      setState((s) => ({
+        ...s,
+        isRecording: false,
+        error: tr('chat.voiceError'),
+      }));
     }
   }, []);
 
-  const stopRecording = useCallback(async () => {
-    if (!recordingRef.current) return;
-
+  const stopRecording = useCallback(() => {
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      if (!uri) {
-        setState({ isRecording: false, isTranscribing: false, error: null });
-        return;
-      }
-
-      // Read the recording and send it to the backend for transcription.
-      setState({ isRecording: false, isTranscribing: true, error: null });
-      const base64 = await new File(uri).base64();
-      const { transcription } = await chatApi.transcribe(
-        base64,
-        mimeForUri(uri),
-      );
-
-      const text = transcription?.trim();
-      setState({ isRecording: false, isTranscribing: false, error: null });
-      if (text) {
-        onTranscript(text);
-      } else {
-        setState((s) => ({ ...s, error: tr('chat.voiceError') }));
-      }
+      ESR?.ExpoSpeechRecognitionModule.stop();
     } catch {
-      setState({
-        isRecording: false,
-        isTranscribing: false,
-        error: tr('chat.voiceError'),
-      });
+      /* not recording / module unavailable — ignore */
     }
-  }, [onTranscript]);
+  }, []);
 
   const toggleRecording = useCallback(() => {
-    if (state.isTranscribing) return;
-    if (state.isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }, [state.isRecording, state.isTranscribing, startRecording, stopRecording]);
+    if (state.isRecording) stopRecording();
+    else startRecording();
+  }, [state.isRecording, startRecording, stopRecording]);
 
   const clearError = useCallback(
     () => setState((s) => ({ ...s, error: null })),
     [],
   );
 
-  return { ...state, startRecording, stopRecording, toggleRecording, clearError };
+  return {
+    ...state,
+    isVoiceAvailable,
+    startRecording,
+    stopRecording,
+    toggleRecording,
+    clearError,
+  };
 }

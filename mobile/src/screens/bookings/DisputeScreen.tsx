@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
+import { useTranslation } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -23,6 +24,7 @@ const DISPUTE_TYPES = [
 export function DisputeScreen({ route, navigation }: BookingsScreenProps<'Dispute'>) {
   const { bookingId, providerId, userId } = route.params;
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { showToast } = useUIStore();
   const [disputeType, setDisputeType] = useState('');
   const [description, setDescription] = useState('');
@@ -75,7 +77,7 @@ export function DisputeScreen({ route, navigation }: BookingsScreenProps<'Disput
         autoCapitalize="sentences"
       />
 
-      <Button label="Submit Dispute" variant="danger" onPress={handleSubmit} loading={loading} />
+      <Button label={t('bookings.reportProblem')} variant="danger" onPress={handleSubmit} loading={loading} />
     </ScrollView>
   );
 }

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
 import { authApi } from '../../../utils/api';
 import { useAuthStore } from '@/store/authStore';
+import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -55,6 +56,8 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         showToast(error.message, 'error');
         return;
       }
+      // Always land on a fresh conversation right after sign-in.
+      useChatStore.getState().newSession();
       setSession(res.userId, res.access_token);
     } catch (err: any) {
       const msg = String(err?.message ?? '');
@@ -72,7 +75,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[styles.container, { paddingTop: insets.top + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl }]}

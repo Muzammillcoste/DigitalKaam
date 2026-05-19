@@ -60,12 +60,22 @@
         {
           "microphonePermission": "Allow DigitalKaam to access your microphone for voice requests."
         }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow DigitalKaam to use the microphone for voice requests.",
+          "speechRecognitionPermission": "Allow DigitalKaam to use speech recognition for voice requests.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "9bd94299-4f43-4f24-aba6-a4c23a2e0719"
       }
     }
   }
+
+
 }

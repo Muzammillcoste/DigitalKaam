@@ -38,6 +38,7 @@ interface AuthState {
   setProfile: (profile: UserProfile) => void;
   setProviderProfile: (profile: ProviderProfile | null) => void;
   toggleProviderMode: () => void;
+  setProviderMode: (on: boolean) => void;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
 }
@@ -57,6 +58,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setProviderProfile: (providerProfile) => set({ providerProfile }),
 
   toggleProviderMode: () => set((state) => ({ isProviderMode: !state.isProviderMode })),
+
+  setProviderMode: (on) => set({ isProviderMode: on }),
 
   logout: async () => {
     // Revoke the session on the backend first (non-fatal if it fails —

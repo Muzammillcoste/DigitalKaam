@@ -15,6 +15,7 @@ import {
 } from '@react-navigation/drawer';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
+import { useUIStore } from '@/store/uiStore';
 import { useTranslation } from '@/i18n';
 import {
   Typography,
@@ -28,16 +29,20 @@ import { initials, formatRelativeTime } from '@/utils/format';
 
 /**
  * Claude-style sidebar:
- *   • "New Chat" + "Bookings" + "Start Earning" at the top
+ *   • "New Chat" + "Bookings" + (conditional) provider entries at the top
  *   • a scrollable "Recent Chats" list in the middle
  *   • a profile strip pinned to the very bottom (avatar · name · ⚙️)
+ *
+ * The highlighted row is derived from the active drawer route so nothing
+ * ever looks permanently "stuck".
  */
-export function AppSidebar({ navigation }: DrawerContentComponentProps) {
+export function AppSidebar({ navigation, state }: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { t, isRTL } = useTranslation();
-  const { profile, providerProfile } = useAuthStore();
+  const { profile, providerProfile, toggleProviderMode } = useAuthStore();
+  const { showToast } = useUIStore();
   const {
     sessions,
     sessionsLoading,
@@ -53,6 +58,9 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
   useEffect(() => {
     if (drawerStatus === 'open') fetchSessions();
   }, [drawerStatus]);
+
+  // Currently-focused drawer screen: 'ChatHome' | 'Bookings' | 'SettingsRoot'.
+  const activeRoute = state.routeNames[state.index];
 
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
@@ -83,6 +91,12 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
     navigation.closeDrawer();
   };
 
+  const handleSwitchMode = () => {
+    toggleProviderMode();
+    showToast(t('profile.switchedToProvider'), 'success');
+    navigation.closeDrawer();
+  };
+
   const handleSettings = () => {
     navigation.navigate('SettingsRoot', { screen: 'Settings' });
     navigation.closeDrawer();
@@ -90,7 +104,7 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + Spacing.base }]}>
-      {/* Brand */}
+      {/* Brand — boxed with its own surface + border */}
       <View style={[styles.brandRow, { flexDirection: rowDir }]}>
         <View style={styles.brandMark}>
           <Text style={styles.brandMarkText}>DK</Text>
@@ -99,28 +113,76 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
       </View>
 
       {/* Primary actions */}
-      <Pressable style={[styles.action, { flexDirection: rowDir }]} onPress={handleNewChat}>
-        <Ionicons name="create-outline" size={20} color={c.text} />
-        <Text style={[styles.actionText, { textAlign: align }]}>
+      <Pressable
+        style={[
+          styles.action,
+          { flexDirection: rowDir },
+          activeRoute === 'ChatHome' && styles.actionActive,
+        ]}
+        onPress={handleNewChat}
+      >
+        <Ionicons
+          name="create-outline"
+          size={20}
+          color={activeRoute === 'ChatHome' ? c.primary : c.text}
+        />
+        <Text
+          style={[
+            styles.actionText,
+            { textAlign: align },
+            activeRoute === 'ChatHome' && styles.actionTextActive,
+          ]}
+        >
           {t('drawer.newChat')}
         </Text>
       </Pressable>
 
-      <Pressable style={[styles.action, { flexDirection: rowDir }]} onPress={handleBookings}>
-        <Ionicons name="calendar-outline" size={20} color={c.text} />
-        <Text style={[styles.actionText, { textAlign: align }]}>
+      <Pressable
+        style={[
+          styles.action,
+          { flexDirection: rowDir },
+          activeRoute === 'Bookings' && styles.actionActive,
+        ]}
+        onPress={handleBookings}
+      >
+        <Ionicons
+          name="calendar-outline"
+          size={20}
+          color={activeRoute === 'Bookings' ? c.primary : c.text}
+        />
+        <Text
+          style={[
+            styles.actionText,
+            { textAlign: align },
+            activeRoute === 'Bookings' && styles.actionTextActive,
+          ]}
+        >
           {t('drawer.bookings')}
         </Text>
       </Pressable>
 
-      {!providerProfile && (
+      {!providerProfile ? (
         <Pressable
-          style={[styles.action, styles.actionAccent, { flexDirection: rowDir }]}
+          style={[styles.action, { flexDirection: rowDir }]}
           onPress={handleStartEarning}
         >
           <Ionicons name="cash-outline" size={20} color={c.primary} />
-          <Text style={[styles.actionText, styles.actionTextAccent, { textAlign: align }]}>
+          <Text
+            style={[styles.actionText, styles.actionAccentText, { textAlign: align }]}
+          >
             {t('drawer.startEarning')}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          style={[styles.action, { flexDirection: rowDir }]}
+          onPress={handleSwitchMode}
+        >
+          <Ionicons name="swap-horizontal" size={20} color={c.primary} />
+          <Text
+            style={[styles.actionText, styles.actionAccentText, { textAlign: align }]}
+          >
+            {t('profile.switchToProvider')}
           </Text>
         </Pressable>
       )}
@@ -146,7 +208,8 @@ export function AppSidebar({ navigation }: DrawerContentComponentProps) {
           </Text>
         ) : (
           sessions.map((s) => {
-            const isActive = s.session_id === sessionId;
+            const isActive =
+              activeRoute === 'ChatHome' && s.session_id === sessionId;
             const title =
               s.summary?.trim()?.split('\n')[0] || t('drawer.untitledChat');
             return (
@@ -223,8 +286,14 @@ const makeStyles = (c: ColorPalette) =>
     brandRow: {
       alignItems: 'center',
       gap: Spacing.sm,
-      paddingHorizontal: Spacing.lg,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      marginHorizontal: Spacing.sm,
       marginBottom: Spacing.lg,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: Radius.lg,
     },
     brandMark: {
       width: 32,
@@ -245,9 +314,10 @@ const makeStyles = (c: ColorPalette) =>
       marginHorizontal: Spacing.sm,
       borderRadius: Radius.md,
     },
-    actionAccent: { backgroundColor: `${c.primary}12` },
+    actionActive: { backgroundColor: `${c.primary}14` },
     actionText: { ...Typography.bodyLarge, color: c.text, flex: 1 },
-    actionTextAccent: { color: c.primary, fontWeight: '600' },
+    actionTextActive: { color: c.primary, fontWeight: '600' },
+    actionAccentText: { color: c.primary, fontWeight: '600' },
 
     sectionLabel: {
       ...Typography.label,

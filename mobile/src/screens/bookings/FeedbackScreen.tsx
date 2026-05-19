@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
+import { useTranslation } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -18,6 +19,7 @@ export function FeedbackScreen({ route, navigation }: BookingsScreenProps<'Feedb
   const { bookingId, providerId, userId } = route.params;
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { showToast } = useUIStore();
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
@@ -78,7 +80,7 @@ export function FeedbackScreen({ route, navigation }: BookingsScreenProps<'Feedb
         autoCapitalize="sentences"
       />
 
-      <Button label="Submit Feedback" onPress={handleSubmit} loading={loading} />
+      <Button label={t('bookings.rateService')} onPress={handleSubmit} loading={loading} />
     </ScrollView>
   );
 }

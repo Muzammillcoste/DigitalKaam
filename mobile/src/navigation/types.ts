@@ -35,6 +35,7 @@ export type SettingsStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
   BecomeProvider: undefined;
+  ProviderEdit: undefined;
   Permissions: undefined;
   ProviderJobDetail: { bookingId: string };
 };

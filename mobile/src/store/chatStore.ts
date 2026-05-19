@@ -16,6 +16,8 @@ interface ChatState {
   messages: ChatMessage[];
   sessionId: string;
   isTyping: boolean;
+  /** True while a previous conversation's history is being fetched. */
+  isLoadingSession: boolean;
 
   /** Past conversations for the "Recent Chats" sidebar list. */
   sessions: ChatSessionSummary[];
@@ -36,6 +38,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   sessionId: generateSessionId(),
   isTyping: false,
+  isLoadingSession: false,
   sessions: [],
   sessionsLoading: false,
 
@@ -69,7 +72,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   clearChat: () => set({ messages: [] }),
 
   newSession: () =>
-    set({ messages: [], sessionId: generateSessionId(), isTyping: false }),
+    set({
+      messages: [],
+      sessionId: generateSessionId(),
+      isTyping: false,
+      isLoadingSession: false,
+    }),
 
   fetchSessions: async () => {
     set({ sessionsLoading: true });
@@ -83,7 +91,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   loadSession: async (sessionId: string) => {
-    set({ isTyping: false });
+    // Clear the old conversation immediately and show the skeleton while the
+    // selected history is fetched (no stale messages flash).
+    set({ sessionId, messages: [], isTyping: false, isLoadingSession: true });
     try {
       const { messages } = await chatApi.session(sessionId);
       // API returns chronological asc; store keeps newest-first for the
@@ -96,11 +106,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
           text: m.content,
           timestamp: new Date(m.created_at),
         }));
-      set({ sessionId, messages: mapped });
+      set({ sessionId, messages: mapped, isLoadingSession: false });
     } catch {
       // If history can't load, start the selected session fresh rather
       // than leaving the previous conversation on screen.
-      set({ sessionId, messages: [] });
+      set({ sessionId, messages: [], isLoadingSession: false });
     }
   },
 }));
