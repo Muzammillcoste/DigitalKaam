@@ -18,6 +18,7 @@ import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { ChatSkeleton } from '@/components/chat/ChatSkeleton';
 import { ChatInputBar } from '@/components/chat/ChatInputBar';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import {
   Typography,
   Spacing,
@@ -55,9 +56,12 @@ export function ChatScreen() {
           >
             <Ionicons name="menu" size={26} color="#fff" />
           </Pressable>
-          <View style={styles.aiAvatar}>
-            <Text style={styles.aiAvatarText}>DK</Text>
-          </View>
+          <BrandLogo
+            size={40}
+            background="rgba(255,255,255,0.2)"
+            borderColor="rgba(255,255,255,0.3)"
+            style={styles.aiAvatar}
+          />
           <View>
             <Text style={styles.headerTitle}>{t('chat.title')}</Text>
             {/* <Text style={styles.headerSubtitle}>{t('chat.subtitle')}</Text> */}
@@ -120,17 +124,7 @@ const makeStyles = (c: ColorPalette) =>
     },
     headerLeft: { alignItems: 'center', gap: Spacing.sm, flex: 1 },
     menuBtn: { paddingRight: Spacing.xs },
-    aiAvatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
-    },
-    aiAvatarText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+    aiAvatar: { borderRadius: 12 },
     headerTitle: { ...Typography.h4, color: '#fff' },
     headerSubtitle: { ...Typography.caption, color: 'rgba(255,255,255,0.75)' },
     newChatBtn: { padding: Spacing.xs },

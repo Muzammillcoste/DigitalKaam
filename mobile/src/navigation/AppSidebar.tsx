@@ -6,8 +6,8 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -112,12 +112,7 @@ export function AppSidebar({ navigation, state }: DrawerContentComponentProps) {
     <View style={[styles.container, { paddingTop: insets.top + Spacing.base }]}>
       {/* Brand — boxed with its own surface + border */}
       <View style={[styles.brandRow, { flexDirection: rowDir }]}>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.brandLogo}
-          resizeMode="contain"
-          accessibilityLabel={t('common.appName')}
-        />
+        <BrandLogo size={36} accessibilityLabel={t('common.appName')} />
         <Text style={styles.brandText}>{t('common.appName')}</Text>
       </View>
 
@@ -327,11 +322,6 @@ const makeStyles = (c: ColorPalette) =>
       borderWidth: 1,
       borderColor: c.border,
       borderRadius: Radius.lg,
-    },
-    brandLogo: {
-      width: 36,
-      height: 36,
-      borderRadius: Radius.md,
     },
     brandText: { ...Typography.h4, color: c.text },
 

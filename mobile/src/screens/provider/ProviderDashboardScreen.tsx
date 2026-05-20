@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useProviderJobsStore } from '@/store/providerJobsStore';
 import { api } from '../../../utils/api';
 import {
   Typography,
@@ -45,6 +46,7 @@ export function ProviderDashboardScreen({ navigation }: any) {
   const styles = useThemedStyles(makeStyles);
   const { providerProfile, toggleProviderMode } = useAuthStore();
   const { showToast } = useUIStore();
+  const setCachedJobs = useProviderJobsStore((s) => s.setJobs);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -56,6 +58,10 @@ export function ProviderDashboardScreen({ navigation }: any) {
     try {
       const data = await api.booking.listByProvider(providerProfile.id);
       setBookings(data);
+      // Mirror the list payload (with joined user_profiles) into the
+      // zustand cache so the job-detail screen can read customer info
+      // even if the GET-by-id endpoint forgets the join.
+      setCachedJobs(data ?? []);
     } catch (err: any) {
       console.error('Failed to load jobs:', err);
       showToast('Failed to load assigned jobs', 'error');
@@ -106,7 +112,7 @@ export function ProviderDashboardScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[c.primaryDark, '#1E1B4B']}
+        colors={[c.primaryDark, '#2E1065']}
         style={[styles.header, { paddingTop: insets.top + Spacing.base }]}
       >
         <View style={styles.headerTop}>

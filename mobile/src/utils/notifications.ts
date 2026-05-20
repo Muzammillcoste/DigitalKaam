@@ -42,7 +42,7 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
         name: 'DigitalKaam',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#4F46E5',
+        lightColor: '#7C3AED',
       });
     }
 

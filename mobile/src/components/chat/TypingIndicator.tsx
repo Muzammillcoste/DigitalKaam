@@ -7,7 +7,7 @@ import {
   useThemedStyles,
   type ColorPalette,
 } from '@/theme';
-import { Avatar } from '@/components/ui/Avatar';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 function Dot({ delay, color }: { delay: number; color: string }) {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -48,7 +48,7 @@ export function TypingIndicator() {
 
   return (
     <View style={styles.row}>
-      <Avatar name="DK" size={32} bgColor={c.primary} />
+      <BrandLogo size={32} background={c.primary} />
       <View style={styles.bubble}>
         <View style={styles.dots}>
           <Dot delay={0} color={c.primary} />

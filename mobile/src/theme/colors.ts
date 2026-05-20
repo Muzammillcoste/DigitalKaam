@@ -1,8 +1,10 @@
 // ── Light palette (default) ───────────────────────────────────
+// Brand colour family: violet (matches the DigitalKaam logo).
+// Avoid pure blue / indigo — the wrench-and-pliers mark reads purple.
 export const lightColors = {
-  primary: '#4F46E5',
-  primaryLight: '#818CF8',
-  primaryDark: '#3730A3',
+  primary: '#7C3AED',      // Violet 600 — buttons, links, brand surfaces
+  primaryLight: '#A78BFA', // Violet 400 — hovers, tints
+  primaryDark: '#5B21B6',  // Violet 800 — pressed states, gradients
   accent: '#F59E0B',
   accentLight: '#FDE68A',
 
@@ -30,7 +32,7 @@ export const lightColors = {
   overlayLight: 'rgba(0,0,0,0.1)',
 
   // Booking status colours (semantic — legible on both themes)
-  statusConfirmed: '#4F46E5',
+  statusConfirmed: '#7C3AED',
   statusEnRoute: '#F59E0B',
   statusArrived: '#3B82F6',
   statusInProgress: '#F97316',
@@ -43,9 +45,9 @@ export type ColorPalette = typeof lightColors;
 // ── Dark palette ──────────────────────────────────────────────
 // Must declare every key in ColorPalette (enforced by the annotation).
 export const darkColors: ColorPalette = {
-  primary: '#818CF8',
-  primaryLight: '#A5B4FC',
-  primaryDark: '#6366F1',
+  primary: '#A78BFA',      // Violet 400 — lifted for dark backgrounds
+  primaryLight: '#C4B5FD', // Violet 300
+  primaryDark: '#7C3AED',  // Violet 600
   accent: '#FBBF24',
   accentLight: '#78350F',
 
@@ -72,7 +74,7 @@ export const darkColors: ColorPalette = {
   overlay: 'rgba(0,0,0,0.65)',
   overlayLight: 'rgba(255,255,255,0.08)',
 
-  statusConfirmed: '#818CF8',
+  statusConfirmed: '#A78BFA',
   statusEnRoute: '#FBBF24',
   statusArrived: '#60A5FA',
   statusInProgress: '#FB923C',

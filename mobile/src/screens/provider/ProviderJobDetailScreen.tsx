@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../../utils/api';
 import { useUIStore } from '@/store/uiStore';
+import { useProviderJobsStore } from '@/store/providerJobsStore';
 import {
   Typography,
   Spacing,
@@ -31,18 +32,52 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
   const styles = useThemedStyles(makeStyles);
   const { showToast } = useUIStore();
 
-  const [loading, setLoading] = useState(true);
+  // Seed from the dashboard's cached list so customer name/phone/address
+  // are visible immediately — and survive even if the GET-by-id response
+  // is missing the user_profiles join.
+  const cachedJob = useProviderJobsStore((s) => s.byId[bookingId]);
+  const upsertCachedJob = useProviderJobsStore((s) => s.upsertJob);
+
+  const [loading, setLoading] = useState(!cachedJob);
   const [updating, setUpdating] = useState(false);
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<any>(cachedJob ?? null);
 
   const fetchJobDetails = async () => {
     try {
       const data = await api.booking.get(bookingId);
-      setJob(data);
+      // Merge field-by-field, preferring fresh values but keeping cached
+      // entries (notably user_profiles) when the backend omits them.
+      setJob((prev: any) => {
+        const merged: Record<string, any> = { ...(prev ?? {}) };
+        for (const [key, value] of Object.entries(data ?? {})) {
+          if (value !== undefined && value !== null) merged[key] = value;
+        }
+        const prevCust = prev?.user_profiles ?? null;
+        const nextCust = (data as any)?.user_profiles ?? null;
+        if (prevCust || nextCust) {
+          merged.user_profiles = {
+            ...(prevCust ?? {}),
+            ...Object.fromEntries(
+              Object.entries(nextCust ?? {}).filter(
+                ([, v]) => v !== undefined && v !== null,
+              ),
+            ),
+          };
+        }
+        // Write the merged record back so any later visit to this job
+        // benefits from the freshest fields.
+        upsertCachedJob({ id: bookingId, ...merged });
+        return merged;
+      });
     } catch (err: any) {
       console.error('Failed to load job:', err);
-      showToast('Failed to load job details', 'error');
-      navigation.goBack();
+      // Only bounce back if we have nothing at all to show.
+      if (!cachedJob) {
+        showToast('Failed to load job details', 'error');
+        navigation.goBack();
+      } else {
+        showToast('Could not refresh job — showing cached details', 'warning');
+      }
     } finally {
       setLoading(false);
     }
@@ -50,6 +85,7 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     fetchJobDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const updateStatus = async (newStatus: BookingStatus) => {

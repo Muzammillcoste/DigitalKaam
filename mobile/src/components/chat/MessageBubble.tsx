@@ -9,7 +9,7 @@ import {
   useThemedStyles,
   type ColorPalette,
 } from '@/theme';
-import { Avatar } from '@/components/ui/Avatar';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { formatRelativeTime } from '@/utils/format';
 import type { ChatMessage } from '@/store/chatStore';
 
@@ -41,7 +41,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     >
       {!isUser && (
         <View style={styles.avatarWrap}>
-          <Avatar name="DK" size={32} bgColor={c.primary} />
+          <BrandLogo size={32} background={c.primary} />
         </View>
       )}
 

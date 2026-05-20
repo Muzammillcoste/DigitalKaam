@@ -53,10 +53,16 @@ router.get('/provider/:providerId', async (req: Request, res: Response) => {
 })
 
 // GET /api/booking/:bookingId — fetch booking + receipt
+// FK hints (providers!provider_id, user_profiles!user_id) disambiguate the
+// embed when joining two related tables in one select — without them
+// PostgREST can silently drop one side and the customer card on the
+// provider job-detail screen renders without a name.
 router.get('/:bookingId', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select('*, providers(name, phone, service_type, area, rating)')
+    .select(
+      '*, providers!provider_id(name, email, phone, service_type, area, rating), user_profiles!user_id(full_name, phone, email, home_area)'
+    )
     .eq('id', req.params.bookingId)
     .single()
   if (error) return res.status(404).json({ error: 'Booking not found' })
