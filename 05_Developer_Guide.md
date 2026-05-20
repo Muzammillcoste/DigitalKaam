@@ -158,8 +158,4 @@ export const MainOrchestrator = new AgentConfig({
 })
 ```
 
----
-
-## 5. Critical Development Pitfalls
-
 
