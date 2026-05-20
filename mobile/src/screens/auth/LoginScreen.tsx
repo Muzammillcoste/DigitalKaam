@@ -16,6 +16,7 @@ import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Typography, Spacing, useThemedStyles, type ColorPalette } from '@/theme';
 import type { AuthScreenProps } from '@/navigation/types';
 
@@ -82,9 +83,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>DK</Text>
-          </View>
+          <BrandLogo size={72} style={styles.logoCircle} />
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to DigitalKaam</Text>
         </View>
@@ -130,16 +129,7 @@ const makeStyles = (c: ColorPalette) =>
       paddingHorizontal: Spacing.xl,
     },
     header: { alignItems: 'center', marginBottom: Spacing['2xl'] },
-    logoCircle: {
-      width: 72,
-      height: 72,
-      borderRadius: 20,
-      backgroundColor: c.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: Spacing.base,
-    },
-    logoText: { fontSize: 28, fontWeight: '800', color: '#fff' },
+    logoCircle: { marginBottom: Spacing.base, borderRadius: 20 },
     title: { ...Typography.h2, color: c.text, marginBottom: 4 },
     subtitle: { ...Typography.body, color: c.textSecondary },
     form: { gap: 4 },

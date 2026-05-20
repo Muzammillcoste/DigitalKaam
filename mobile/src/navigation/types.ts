@@ -12,7 +12,20 @@ export type AuthStackParamList = {
 export type DrawerParamList = {
   ChatHome: undefined;
   Bookings: undefined;
+  Disputes: undefined;
   SettingsRoot: undefined;
+};
+
+// ── Disputes Stack ────────────────────────────────────────────
+export type DisputesStackParamList = {
+  DisputesList: undefined;
+};
+
+// ── Provider Tabs ─────────────────────────────────────────────
+export type ProviderTabParamList = {
+  JobsTab: undefined;
+  DisputesTab: undefined;
+  SettingsTab: undefined;
 };
 
 // ── Chat Stack ────────────────────────────────────────────────
@@ -38,12 +51,6 @@ export type SettingsStackParamList = {
   ProviderEdit: undefined;
   Permissions: undefined;
   ProviderJobDetail: { bookingId: string };
-};
-
-// ── Provider mode (kept on tabs) ──────────────────────────────
-export type ProviderTabParamList = {
-  JobsTab: undefined;
-  SettingsTab: undefined;
 };
 
 // ── Typed screen-prop helpers ─────────────────────────────────

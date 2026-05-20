@@ -206,6 +206,8 @@ export const api = {
     }) => post('/api/dispute', body),
     get: (disputeId: string) => get(`/api/dispute/${disputeId}`),
     listByUser: (userId: string) => get<any[]>(`/api/dispute/user/${userId}`),
+    listByProvider: (providerId: string) =>
+      get<any[]>(`/api/dispute/provider/${providerId}`),
     update: (disputeId: string, body: { status?: string; resolution?: string }) =>
       patch(`/api/dispute/${disputeId}`, body),
     remove: (disputeId: string) => del<void>(`/api/dispute/${disputeId}`),

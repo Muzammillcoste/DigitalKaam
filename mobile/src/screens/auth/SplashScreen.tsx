@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography, useColors } from '@/theme';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import type { AuthScreenProps } from '@/navigation/types';
 
 export function SplashScreen({ navigation }: AuthScreenProps<'Splash'>) {
@@ -36,9 +37,12 @@ export function SplashScreen({ navigation }: AuthScreenProps<'Splash'>) {
       <Animated.View
         style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
       >
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoText}>DK</Text>
-        </View>
+        <BrandLogo
+          size={96}
+          background="rgba(255,255,255,0.2)"
+          borderColor="rgba(255,255,255,0.4)"
+          style={styles.logoCircle}
+        />
         <Text style={styles.appName}>DigitalKaam</Text>
       </Animated.View>
 
@@ -61,17 +65,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logoWrap: { alignItems: 'center', gap: 16 },
-  logoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  logoText: { fontSize: 36, fontWeight: '800', color: '#fff' },
+  logoCircle: { borderRadius: 28, borderWidth: 2 },
   appName: { ...Typography.h1, color: '#fff', letterSpacing: 1 },
   tagline: { ...Typography.bodyLarge, color: 'rgba(255,255,255,0.9)', marginTop: 8 },
   subTagline: { ...Typography.caption, color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 },

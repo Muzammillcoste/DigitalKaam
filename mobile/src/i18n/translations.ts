@@ -19,6 +19,7 @@ const en = {
   // ── Drawer / Sidebar ──────────────────────────────────────
   'drawer.newChat': 'New Chat',
   'drawer.bookings': 'Bookings',
+  'drawer.disputes': 'Disputes',
   'drawer.startEarning': 'Start Earning',
   'drawer.recentChats': 'Recent Chats',
   'drawer.noRecentChats': 'No recent chats yet',
@@ -138,6 +139,9 @@ const en = {
   'bookings.reportedIssues': 'Reported Issues',
   'bookings.noIssues': 'No issues reported for this booking.',
   'bookings.issueUnderReview': 'Under review',
+
+  // ── Disputes ──────────────────────────────────────────────
+  'disputes.title': 'Disputes',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -156,6 +160,7 @@ const ur: Translations = {
 
   'drawer.newChat': 'نئی گفتگو',
   'drawer.bookings': 'بکنگز',
+  'drawer.disputes': 'تنازعات',
   'drawer.startEarning': 'کمائی شروع کریں',
   'drawer.recentChats': 'حالیہ گفتگوئیں',
   'drawer.noRecentChats': 'ابھی کوئی حالیہ گفتگو نہیں',
@@ -271,6 +276,8 @@ const ur: Translations = {
   'bookings.reportedIssues': 'رپورٹ شدہ مسائل',
   'bookings.noIssues': 'اس بکنگ کے لیے کوئی مسئلہ رپورٹ نہیں ہوا۔',
   'bookings.issueUnderReview': 'جائزہ زیرِ غور',
+
+  'disputes.title': 'تنازعات',
 };
 
 export const dictionaries: Record<Language, Translations> = { en, ur };

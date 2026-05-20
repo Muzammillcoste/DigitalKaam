@@ -11,6 +11,7 @@ import type {
   DrawerParamList,
   ChatStackParamList,
   BookingsStackParamList,
+  DisputesStackParamList,
   SettingsStackParamList,
   ProviderTabParamList,
 } from './types';
@@ -23,6 +24,7 @@ import { BookingsListScreen } from '@/screens/bookings/BookingsListScreen';
 import { BookingDetailScreen } from '@/screens/bookings/BookingDetailScreen';
 import { FeedbackScreen } from '@/screens/bookings/FeedbackScreen';
 import { DisputeScreen } from '@/screens/bookings/DisputeScreen';
+import { DisputesListScreen } from '@/screens/bookings/DisputesListScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { PermissionsScreen } from '@/screens/settings/PermissionsScreen';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
@@ -35,6 +37,7 @@ import { ProviderJobDetailScreen } from '@/screens/provider/ProviderJobDetailScr
 const Drawer = createDrawerNavigator<DrawerParamList>();
 const ChatStack = createNativeStackNavigator<ChatStackParamList>();
 const BookingsStack = createNativeStackNavigator<BookingsStackParamList>();
+const DisputesStack = createNativeStackNavigator<DisputesStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const ProviderTab = createBottomTabNavigator<ProviderTabParamList>();
 const ProviderStack = createNativeStackNavigator<any>();
@@ -90,6 +93,24 @@ function BookingsNavigator() {
         options={{ title: t('bookings.reportProblem') }}
       />
     </BookingsStack.Navigator>
+  );
+}
+
+// ── Disputes ──────────────────────────────────────────────────
+function DisputesNavigator({ withMenu = true }: { withMenu?: boolean }) {
+  const { t } = useTranslation();
+  const c = useColors();
+  return (
+    <DisputesStack.Navigator screenOptions={headerOptions(c)}>
+      <DisputesStack.Screen
+        name="DisputesList"
+        component={DisputesListScreen}
+        options={{
+          title: t('disputes.title'),
+          headerLeft: withMenu ? () => <HeaderMenuButton /> : undefined,
+        }}
+      />
+    </DisputesStack.Navigator>
   );
 }
 
@@ -161,6 +182,7 @@ function CustomerDrawer() {
     >
       <Drawer.Screen name="ChatHome" component={ChatStackNavigator} />
       <Drawer.Screen name="Bookings" component={BookingsNavigator} />
+      <Drawer.Screen name="Disputes" component={DisputesNavigator} />
       <Drawer.Screen name="SettingsRoot" component={SettingsNavigator} />
     </Drawer.Navigator>
   );
@@ -208,6 +230,7 @@ export function ProviderNavigator() {
             { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }
           > = {
             JobsTab: { focused: 'briefcase', outline: 'briefcase-outline' },
+            DisputesTab: { focused: 'alert-circle', outline: 'alert-circle-outline' },
             SettingsTab: { focused: 'settings', outline: 'settings-outline' },
           };
           const icon = icons[route.name];
@@ -226,6 +249,12 @@ export function ProviderNavigator() {
         component={ProviderJobsStack}
         options={{ title: 'My Jobs' }}
       />
+      <ProviderTab.Screen
+        name="DisputesTab"
+        options={{ title: t('disputes.title') }}
+      >
+        {() => <DisputesNavigator withMenu={false} />}
+      </ProviderTab.Screen>
       <ProviderTab.Screen
         name="SettingsTab"
         options={{ title: t('settings.title') }}

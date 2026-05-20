@@ -119,20 +119,60 @@ export function ProviderJobDetailScreen({ route, navigation }: any) {
         <Text style={styles.sectionTitle}>Customer Details</Text>
         <View style={styles.customerRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{job.user_profiles?.full_name?.[0]}</Text>
+            <Text style={styles.avatarText}>
+              {job.user_profiles?.full_name?.[0]?.toUpperCase() ?? '?'}
+            </Text>
           </View>
           <View style={styles.customerMeta}>
-            <Text style={styles.customerName}>{job.user_profiles?.full_name}</Text>
-            <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={14} color={c.textSecondary} />
-              <Text style={styles.locationText}>{job.user_profiles?.home_area || 'Gulshan'}</Text>
-            </View>
+            <Text style={styles.customerName}>
+              {job.user_profiles?.full_name ?? 'Customer'}
+            </Text>
+            {job.user_profiles?.phone ? (
+              <Text style={styles.customerSubtle}>{job.user_profiles.phone}</Text>
+            ) : null}
           </View>
-          {job.user_profiles?.phone && (
-            <Pressable style={styles.callBtn} onPress={() => makeCall(job.user_profiles.phone)}>
+          {job.user_profiles?.phone ? (
+            <Pressable
+              style={styles.callBtn}
+              onPress={() => makeCall(job.user_profiles.phone)}
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${job.user_profiles?.full_name ?? 'customer'}`}
+            >
               <Ionicons name="call" size={20} color={c.primary} />
             </Pressable>
-          )}
+          ) : null}
+        </View>
+
+        <View style={styles.contactDivider} />
+
+        <View style={styles.contactRow}>
+          <Ionicons name="location-outline" size={18} color={c.primary} />
+          <View style={styles.contactTextWrap}>
+            <Text style={styles.contactLbl}>Address</Text>
+            <Text style={styles.contactVal}>
+              {job.user_profiles?.home_area?.trim() || 'Not provided'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.contactRow}>
+          <Ionicons name="call-outline" size={18} color={c.primary} />
+          <View style={styles.contactTextWrap}>
+            <Text style={styles.contactLbl}>Phone</Text>
+            {job.user_profiles?.phone ? (
+              <Pressable
+                onPress={() => makeCall(job.user_profiles.phone)}
+                accessibilityRole="link"
+                accessibilityLabel={`Call ${job.user_profiles.phone}`}
+              >
+                <Text style={[styles.contactVal, styles.contactValLink]}>
+                  {job.user_profiles.phone}
+                </Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.contactVal}>Not provided</Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -266,6 +306,7 @@ const makeStyles = (c: ColorPalette) =>
     avatarText: { ...Typography.h4, color: c.primary },
     customerMeta: { flex: 1, gap: 2 },
     customerName: { ...Typography.bodyLarge, fontWeight: '700', color: c.text },
+    customerSubtle: { ...Typography.caption, color: c.textSecondary },
     locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     locationText: { ...Typography.body, color: c.textSecondary },
     callBtn: {
@@ -276,6 +317,17 @@ const makeStyles = (c: ColorPalette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
+    contactDivider: { height: 1, backgroundColor: c.divider, marginVertical: Spacing.base },
+    contactRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    contactTextWrap: { flex: 1 },
+    contactLbl: { ...Typography.caption, color: c.textSecondary },
+    contactVal: { ...Typography.body, color: c.text, fontWeight: '600', marginTop: 2 },
+    contactValLink: { color: c.primary, textDecorationLine: 'underline' },
 
     scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
     scheduleVal: { ...Typography.bodyLarge, fontWeight: '700', color: c.text },

@@ -60,7 +60,7 @@ export function ChatScreen() {
           </View>
           <View>
             <Text style={styles.headerTitle}>{t('chat.title')}</Text>
-            <Text style={styles.headerSubtitle}>{t('chat.subtitle')}</Text>
+            {/* <Text style={styles.headerSubtitle}>{t('chat.subtitle')}</Text> */}
           </View>
         </View>
         <Pressable onPress={newSession} style={styles.newChatBtn} hitSlop={8}>

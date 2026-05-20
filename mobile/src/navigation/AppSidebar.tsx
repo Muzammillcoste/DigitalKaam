@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,6 +87,11 @@ export function AppSidebar({ navigation, state }: DrawerContentComponentProps) {
     navigation.closeDrawer();
   };
 
+  const handleDisputes = () => {
+    navigation.navigate('Disputes');
+    navigation.closeDrawer();
+  };
+
   const handleStartEarning = () => {
     navigation.navigate('SettingsRoot', { screen: 'BecomeProvider' });
     navigation.closeDrawer();
@@ -106,9 +112,12 @@ export function AppSidebar({ navigation, state }: DrawerContentComponentProps) {
     <View style={[styles.container, { paddingTop: insets.top + Spacing.base }]}>
       {/* Brand — boxed with its own surface + border */}
       <View style={[styles.brandRow, { flexDirection: rowDir }]}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandMarkText}>DK</Text>
-        </View>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+          accessibilityLabel={t('common.appName')}
+        />
         <Text style={styles.brandText}>{t('common.appName')}</Text>
       </View>
 
@@ -158,6 +167,30 @@ export function AppSidebar({ navigation, state }: DrawerContentComponentProps) {
           ]}
         >
           {t('drawer.bookings')}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[
+          styles.action,
+          { flexDirection: rowDir },
+          activeRoute === 'Disputes' && styles.actionActive,
+        ]}
+        onPress={handleDisputes}
+      >
+        <Ionicons
+          name="alert-circle-outline"
+          size={20}
+          color={activeRoute === 'Disputes' ? c.primary : c.text}
+        />
+        <Text
+          style={[
+            styles.actionText,
+            { textAlign: align },
+            activeRoute === 'Disputes' && styles.actionTextActive,
+          ]}
+        >
+          {t('drawer.disputes')}
         </Text>
       </Pressable>
 
@@ -295,15 +328,11 @@ const makeStyles = (c: ColorPalette) =>
       borderColor: c.border,
       borderRadius: Radius.lg,
     },
-    brandMark: {
-      width: 32,
-      height: 32,
+    brandLogo: {
+      width: 36,
+      height: 36,
       borderRadius: Radius.md,
-      backgroundColor: c.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
-    brandMarkText: { color: c.textInverse, fontWeight: '800', fontSize: 13 },
     brandText: { ...Typography.h4, color: c.text },
 
     action: {

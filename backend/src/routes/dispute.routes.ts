@@ -36,8 +36,19 @@ router.get('/:disputeId', async (req: Request, res: Response) => {
 router.get('/user/:userId', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('disputes')
-    .select('*')
+    .select('*, providers(name, service_type), bookings(user_request, scheduled_time, price)')
     .eq('user_id', req.params.userId)
+    .order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json(data)
+})
+
+// GET /api/dispute/provider/:providerId — all disputes for a provider
+router.get('/provider/:providerId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from('disputes')
+    .select('*, user_profiles(full_name, phone, home_area), bookings(user_request, scheduled_time, price)')
+    .eq('provider_id', req.params.providerId)
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
   return res.json(data)
