@@ -1,5 +1,5 @@
 # Document 04 — API Documentation
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: API Reference  
 **Audience**: Frontend Developers, Mobile Developers, QA Engineers, API Integrators  
@@ -62,7 +62,7 @@ No auth required. Returns server status.
 ```json
 {
   "status": "ok",
-  "service": "DigitalKaam Antigravity API",
+  "service": "DigitalKaam API",
   "timestamp": "2026-05-19T10:00:00.000Z"
 }
 ```
@@ -345,70 +345,6 @@ Convert text to speech audio (WAV). Used to play back AI responses as voice.
 - `500` — Gemini TTS failed
 
 **Audio Specs**: 24000 Hz, mono, 16-bit PCM, WAV container.
-
----
-
-## 5. Service Routes — `/api/service`
-
-**Auth**: Not required (no `requireAuth` middleware).
-
----
-
-### `POST /api/service/request`
-Run the full 8-agent Antigravity pipeline in a single call. Returns complete booking result.
-
-**Auth**: Not required (development/testing endpoint).
-
-**Request Body**:
-```json
-{
-  "userInput": "Need an AC technician, my AC is not cooling at all",
-  "userId": "uuid",
-  "requestedDate": "2026-05-20",     // optional, defaults to tomorrow
-  "requestedTime": "10:00",          // optional, defaults to 10:00
-  "location": "Gulshan"              // optional
-}
-```
-
-**Success Response** `200`:
-```json
-{
-  "sessionId": "uuid",
-  "intent": { "service": "AC Technician", "severity": "high", "location": "Gulshan", ... },
-  "context": { "loyaltyPoints": 150, "isReturningUser": true, ... },
-  "complexity": { "complexity": "intermediate", "estimatedDurationHours": 2, ... },
-  "discovery": { "totalFound": 5, "searchArea": "Gulshan", ... },
-  "matching": { "topProvider": { "name": "...", "matchScore": 0.78, ... }, ... },
-  "pricing": { "total": 2363, "breakdown": {...}, "currency": "PKR", ... },
-  "scheduling": { "slot": "2026-05-20 10:00", "conflictDetected": false, ... },
-  "booking": {
-    "bookingId": "uuid",
-    "bookingRef": "DK-260520-K7M2",
-    "status": "confirmed",
-    "receipt": { ... }
-  },
-  "success": true,
-  "clarificationNeeded": false
-}
-```
-
-**Clarification Response** (when AI needs more info):
-```json
-{
-  "success": false,
-  "clarificationNeeded": true,
-  "clarificationQuestion": "Could you please tell me the specific issue and your preferred time?"
-}
-```
-
-**Error Response** (no providers found):
-```json
-{
-  "success": false,
-  "errorMessage": "No providers available in your area for the requested time.",
-  "clarificationNeeded": false
-}
-```
 
 ---
 

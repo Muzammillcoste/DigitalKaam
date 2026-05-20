@@ -1,5 +1,5 @@
 # Document 05 — Authentication & Authorization
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Security Reference  
 **Audience**: Backend Developers, Security Engineers  
@@ -243,7 +243,6 @@ The system has **no role-based access control (RBAC)**. Once a user has a valid 
 | `PUT /api/admin/platform-config/:key` | ✅ JWT | Any user (should be admin) |
 | `POST /api/auth/signup` | ❌ None | N/A |
 | `POST /api/auth/login` | ❌ None | N/A |
-| `POST /api/service/request` | ❌ None | N/A |
 | `GET /api/provider` | ❌ None | N/A |
 | `GET /api/provider/:id` | ❌ None | N/A |
 | `/api/users/*` | ❌ None | N/A |

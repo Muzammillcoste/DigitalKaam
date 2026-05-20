@@ -1,5 +1,5 @@
 # Document 17 — Glossary
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Reference  
 **Audience**: All team members, new joiners, stakeholders  
@@ -18,9 +18,6 @@ A software component that invokes an AI model (Gemini) to process inputs and pro
 **agentCache**  
 An in-memory `Map<sessionId, Agent>` in `chat.routes.ts` that stores active `OrchestratorAgent` instances. Lost on server restart; rebuilt from DB on cache miss.
 
-**Antigravity Pipeline**  
-The 8-sequential-agent orchestration system that processes a single natural language service request end-to-end. Named after the anti-gravity metaphor of "lifting" informal service requests into a structured, bookable service. Entry point: `POST /api/service/request`. Implementation: `backend/src/orchestrator/antigravity.ts`.
-
 **availScore**  
 A matching factor (weight: 0.20, highest weight) that is 1.0 if a provider has an unbooked availability slot for the requested date, 0.0 otherwise. Binary — no partial availability.
 
@@ -32,7 +29,7 @@ An object mapping Karachi area names (strings) to `{ lat, lng }` coordinates. Us
 ## B
 
 **BookingAgent**  
-The 8th (final) agent in the Antigravity pipeline. Creates the booking record, marks the availability slot as booked, and generates the receipt. Source: `bookingController.ts`. Also refers to the specialized `adk/agents/BookingAgent.ts` module in the ADK agent library.
+ADK specialized agent module (`adk/agents/BookingAgent.ts`) that handles booking-related conversations. Creates booking records, marks availability slots as booked, and generates receipts. Source: `bookingController.ts`.
 
 **booking_count**  
 A field on `user_profiles` tracking total number of bookings made by a user. Incremented as a fire-and-forget async operation after booking creation. Used to determine `isReturningUser`.
@@ -48,7 +45,7 @@ A field in `IntentOutput` classifying whether the user appears to be price-consc
 ## C
 
 **callGemini(prompt)**  
-A helper function in `lib/gemini.ts` that sends a text prompt to Gemini (`gemini-1.5-flash`) and returns the raw text response. Used by all 8 pipeline agents. Uses `@google/generative-ai` SDK (older).
+A helper function in `lib/gemini.ts` that sends a text prompt to Gemini and returns the raw text response.
 
 **cancelScore**  
 A matching factor (weight: 0.05) based on a provider's complaint-to-interaction ratio. Higher cancellations/complaints → lower score.
@@ -63,7 +60,7 @@ Database table storing all conversation messages. Columns: `id`, `session_id`, `
 Database table tracking conversation session metadata. Columns: `session_id`, `user_id`, `summary`, `turn_count`, `booking_ids[]`, `last_active`.
 
 **ComplexityAgent**  
-The 3rd agent in the Antigravity pipeline. Classifies job complexity (basic/intermediate/complex) and estimates duration in hours. Source: `complexityController.ts`.
+Removed — was part of the deprecated sequential pipeline.
 
 **ConfirmBookingTool**  
 An ADK tool (`adk/tools/ConfirmBookingTool.ts`) that creates a booking in the database. Contains the double-booking guard: checks for existing confirmed bookings in the session before creating a new one.
@@ -72,7 +69,7 @@ An ADK tool (`adk/tools/ConfirmBookingTool.ts`) that creates a booking in the da
 A 0.0–1.0 float stored in every `traces` record indicating how confident the AI was in its output. High values (≥ 0.9) indicate deterministic or highly certain outputs. Low values (< 0.6) suggest ambiguous or fallback outputs.
 
 **ContextAgent**  
-The 2nd agent in the Antigravity pipeline. Loads user history, loyalty points, and preferences from the database. Source: `contextController.ts`.
+Removed — was part of the deprecated sequential pipeline.
 
 ---
 
@@ -85,7 +82,7 @@ The platform name. Urdu for "Digital Work". An AI-powered home services marketpl
 The process of finding candidate service providers based on service type and location. Implementation: `discoveryController.ts` and `FindProvidersTool.ts`.
 
 **DiscoveryAgent**  
-The 4th agent in the Antigravity pipeline. Searches the `providers` table for active providers matching service type and area. Source: `discoveryController.ts`. Also refers to the specialized `adk/agents/DiscoveryAgent.ts` module in the ADK agent library.
+ADK specialized agent module (`adk/agents/DiscoveryAgent.ts`) that handles provider discovery conversations. Searches the `providers` table for active providers matching service type and area. Source: `discoveryController.ts`.
 
 **distScore**  
 A matching factor (weight: 0.10) based on Haversine distance between the provider's area and the user's area. Normalized 0–1 (closer = higher score). Only calculated when `AREA_COORDS` has entries for both areas.
@@ -101,7 +98,7 @@ The mechanism in `ConfirmBookingTool` that queries for existing confirmed bookin
 A parameter passed to `admin.createUser()` during signup. Marks the new user's email as already confirmed, bypassing Supabase's email verification flow. Deliberate choice for mobile-first UX.
 
 **estimatedDurationHours**  
-A float output of `ComplexityAgent` representing the expected job duration. Input to `laborFee` calculation: `laborFee = round(hourlyRate × estimatedDurationHours)`.
+A float representing the expected job duration. Input to `laborFee` calculation: `laborFee = round(hourlyRate × estimatedDurationHours)`.
 
 ---
 
@@ -121,8 +118,7 @@ An async pattern where a side-effect operation (e.g., incrementing booking_count
 ## G
 
 **Gemini**  
-Google's large language model family. DigitalKaam uses 4 models:
-- `gemini-1.5-flash` — pipeline agents (8-agent Antigravity flow)
+Google's large language model family. DigitalKaam uses 3 models:
 - `gemini-2.5-flash` — OrchestratorAgent and SummarizerAgent
 - `gemini-2.0-flash` — audio transcription
 - `gemini-2.5-flash-preview-tts` — text-to-speech
@@ -145,7 +141,7 @@ A provider's charge per hour in PKR. Stored in `providers.hourly_rate`. Range: 1
 ## I
 
 **IntentAgent**  
-The 1st agent in the Antigravity pipeline. Extracts service intent from natural language. Outputs structured `IntentOutput` including service type, severity, location, and budget sensitivity. Source: `intentController.ts`.
+Removed — was part of the deprecated sequential pipeline.
 
 **isReturningUser**  
 A boolean in `ContextOutput`. True if `user_profiles.booking_count > 0`. Used by the orchestrator to customize messaging and potentially apply loyalty benefits.
@@ -184,7 +180,7 @@ An integer field on `user_profiles` storing the user's loyalty balance. The disc
 The combined weighted score for a provider candidate (0.0–1.0). Calculated from 10 normalized sub-scores. Determines provider ranking. Higher = better match.
 
 **MatchingAgent**  
-The 5th agent in the Antigravity pipeline. Scores and ranks all candidate providers using a 10-factor algorithm. Source: `matchingController.ts`.
+ADK specialized agent module (`adk/agents/MatchingAgent.ts`). Scores and ranks all candidate providers using a 10-factor algorithm. Source: `matchingController.ts`.
 
 **min-max normalization**  
 The technique used to normalize provider scores to 0–1 range: `(value - min) / (max - min)`. Applied to rating, price, and other numerical factors.
@@ -213,7 +209,7 @@ A component of the service price representing the platform's revenue per booking
 A matching factor (weight: 0.05). 1.0 if provider is in user's `preferred_providers`, 0.0 if in `blacklisted_providers`, 0.5 otherwise.
 
 **PricingAgent**  
-The 6th agent in the Antigravity pipeline. Calculates the dynamic price quote. Source: `pricingController.ts`. Also refers to the specialized `adk/agents/PricingAgent.ts` module in the ADK agent library.
+ADK specialized agent module (`adk/agents/PricingAgent.ts`) that handles pricing conversations. Calculates the dynamic price quote. Source: `pricingController.ts`.
 
 ---
 
@@ -248,7 +244,7 @@ Urdu written in Latin (Roman) script — commonly used in Pakistan for informal 
 ## S
 
 **SchedulingAgent**  
-The 7th agent in the Antigravity pipeline. Finds an available time slot for the top-matched provider on the requested date. Source: `schedulingController.ts`.
+ADK specialized agent module (`adk/agents/SchedulingAgent.ts`) that handles scheduling conversations. Finds an available time slot for the top-matched provider on the requested date. Source: `schedulingController.ts`.
 
 **service_role key**  
 The Supabase admin API key stored in `SUPABASE_SERVICE_KEY`. Bypasses all RLS policies. Used by the backend for all database operations. Must never be exposed client-side.
@@ -263,7 +259,7 @@ UUID identifying a chat conversation. Stored in `chat_sessions`, `chat_messages`
 A field on the `Agent` class (`{ sessionId, userId }`) injected into every tool call by the chat route. Ensures tools always receive session context even if Gemini omits it from function arguments.
 
 **severity**  
-Classification of request urgency. Values: `low` (routine), `medium` (inconvenient), `high` (emergency). Extracted by `IntentAgent`. Affects urgency surcharge in pricing.
+Classification of request urgency. Values: `low` (routine), `medium` (inconvenient), `high` (emergency). Affects urgency surcharge in pricing.
 
 **specializationScore**  
 A matching factor (weight: 0.10). 1.0 if provider's `skills` array contains keywords from the user's problem description, 0.5 otherwise.

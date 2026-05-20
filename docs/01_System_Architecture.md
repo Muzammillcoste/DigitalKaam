@@ -1,5 +1,5 @@
 # Document 01 — System Architecture
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Architecture Reference  
 **Audience**: All Engineers, Architects, Executives  
@@ -34,7 +34,6 @@ graph TB
 
         subgraph "Route Layer"
             CHAT["/api/chat"]
-            SVC["/api/service/request"]
             BOOK["/api/booking"]
             PROV["/api/provider"]
             USR["/api/users"]
@@ -53,17 +52,6 @@ graph TB
             MEM["In-Memory Agent Cache\n(Map<sessionId, Agent>)"]
         end
 
-        subgraph "Antigravity Pipeline (Sequential)"
-            AG1["1. IntentAgent"]
-            AG2["2. ContextAgent"]
-            AG3["3. ComplexityAgent"]
-            AG4["4. DiscoveryAgent"]
-            AG5["5. MatchingAgent"]
-            AG6["6. PricingAgent"]
-            AG7["7. SchedulingAgent"]
-            AG8["8. BookingAgent"]
-        end
-
         subgraph "Tools (ADK)"
             T1["find_available_providers"]
             T2["calculate_dynamic_pricing"]
@@ -74,12 +62,11 @@ graph TB
         end
     end
 
-    subgraph "AI Layer — Google Gemini"
-        G1["gemini-1.5-flash\n(Intent, Complexity)"]
-        G2["gemini-2.5-flash\n(Orchestrator, Summarizer)"]
-        G3["gemini-2.0-flash\n(Audio Transcription)"]
-        G4["gemini-2.5-flash-preview-tts\n(Text-to-Speech)"]
-    end
+        subgraph "AI Layer — Google Gemini"
+            G2["gemini-2.5-flash\n(Orchestrator, Summarizer)"]
+            G3["gemini-2.0-flash\n(Audio Transcription)"]
+            G4["gemini-2.5-flash-preview-tts\n(Text-to-Speech)"]
+        end
 
     subgraph "Data Layer — Supabase"
         DB[("PostgreSQL\n(11 Tables)")]
@@ -94,7 +81,6 @@ graph TB
     AUTH --> BOOK
     AUTH --> AUTHRT
     AUTH --> PROV
-    RL --> SVC
     RL --> USR
     RL --> DISP
     RL --> AVAIL
@@ -150,13 +136,9 @@ graph TB
 graph LR
     subgraph "Entry Points"
         EP1["POST /api/chat"]
-        EP2["POST /api/service/request"]
     end
 
-    subgraph "Core Pipeline Controllers"
-        IC["IntentController\n(Gemini NLP)"]
-        CC["ContextController\n(User Profile)"]
-        CX["ComplexityController\n(Gemini Classify)"]
+    subgraph "Service Controllers"
         DC["DiscoveryController\n(DB Search)"]
         MC["MatchingController\n(Scoring Algorithm)"]
         PC["PricingController\n(Dynamic Pricing)"]
@@ -179,22 +161,21 @@ graph LR
         SUPABASE["Supabase Platform\n(Auth + DB)"]
     end
 
-    EP1 -->|"ADK Agent.run()"| IC
-    EP2 -->|"runAntigravityOrchestrator()"| IC
-
-    IC --> CC --> CX --> DC --> MC --> PC --> SC --> BC
+    EP1 -->|"ADK Agent.run()"| DC
+    EP1 -->|"ADK Agent.run()"| MC
+    EP1 -->|"ADK Agent.run()"| PC
+    EP1 -->|"ADK Agent.run()"| SC
+    EP1 -->|"ADK Agent.run()"| BC
 
     BC --> SUP
     PC --> SUP
     MC --> SUP
     DC --> SUP
-    CC --> SUP
     LC --> SUP
     RC --> SUP
     DISC --> SUP
 
-    IC --> GEMINI
-    CX --> GEMINI
+    EP1 --> GEMINI
 
     SUP --> SUPABASE
 ```
@@ -205,11 +186,7 @@ graph LR
 
 | Service | Type | Description | Entry Point |
 |---------|------|-------------|-------------|
-| **Antigravity Orchestrator** | Sync Pipeline | Runs 8 agents sequentially | `POST /api/service/request` |
 | **ADK Chat** | Conversational AI | Gemini orchestrator with tools | `POST /api/chat` |
-| **Intent Service** | AI (Gemini) | Parse user language → structured intent | `processIntent()` |
-| **Context Service** | DB Read | Load user profile, loyalty, preferences | `processContext()` |
-| **Complexity Classifier** | AI (Gemini) | Estimate job difficulty and duration | `processComplexity()` |
 | **Discovery Service** | DB Search | Find providers by service type + area | `processDiscovery()` |
 | **Matching Engine** | Scoring Algorithm | Multi-factor provider ranking | `processMatching()` |
 | **Pricing Engine** | Calculation | Dynamic price from DB config | `processPricing()` |
@@ -274,37 +251,31 @@ graph TB
 
 ## 6. Design Patterns
 
-### 6.1 Sequential Agent Pipeline (Antigravity)
+### 6.1 Tool-Calling Orchestrator (ADK)
 
-The `runAntigravityOrchestrator()` function executes agents in a fixed, deterministic order. Each agent receives the output of all previous agents as input. This is a **Chain of Responsibility** pattern where each agent enriches the context.
-
-**Why**: Deterministic pipelines are easier to debug, test, and audit than fully autonomous multi-agent systems. Each step has a clear input contract and output interface.
-
-### 6.2 Tool-Calling Orchestrator (ADK)
-
-The ADK chat interface uses a single Gemini LLM that invokes "tools" (functions) to drive the same pipeline. The LLM decides which tools to call and in what order based on the conversation state. This is a **ReAct (Reason + Act)** agent pattern.
+The ADK chat interface uses a single Gemini LLM that invokes "tools" (functions) to drive the booking workflow. The LLM decides which tools to call and in what order based on the conversation state. This is a **ReAct (Reason + Act)** agent pattern.
 
 **Why**: Gives conversational flexibility. The LLM can ask follow-up questions, handle multi-turn negotiation, and adapt to user edge cases without hardcoded logic.
 
-### 6.3 DB-Driven Configuration
+### 6.2 DB-Driven Configuration
 
 All pricing parameters live in the `platform_config` Supabase table. The `loadPlatformConfig()` function fetches them at runtime on every pricing call, with hardcoded defaults as fallback.
 
 **Why**: Allows operators to change fees, urgency surcharges, and loyalty caps without code deploys. Supports operational agility.
 
-### 6.4 Server-Enforced Session Metadata
+### 6.3 Server-Enforced Session Metadata
 
 The `agent.sessionMetadata` object is merged into every tool call's arguments server-side, regardless of what the LLM passes. This prevents the LLM from accidentally omitting `sessionId` or `userId` from tool calls.
 
 **Why**: LLMs are probabilistic. Critical identifiers must be injected deterministically to prevent data integrity issues (bookings stored under wrong user, wrong session).
 
-### 6.5 Isolated Auth Client Pattern
+### 6.4 Isolated Auth Client Pattern
 
 The `requireAuth` middleware creates a **disposable Supabase client** for token verification, separate from the shared `service-role` client used for all DB operations.
 
 **Why**: If token refresh were called on the shared client, the client's internal auth state would be downgraded from `service_role` to user JWT, breaking all subsequent DB operations until server restart.
 
-### 6.6 Booking Facts Injection (Anti-Hallucination)
+### 6.5 Booking Facts Injection (Anti-Hallucination)
 
 Before every AI turn, the server queries confirmed bookings for the session from the DB and injects them as a verbatim block in the system instructions.
 
@@ -329,10 +300,10 @@ Before every AI turn, the server queries confirmed bookings for the session from
 **Rationale**: Native multimodal (audio transcription + TTS + text in single API). Supports Urdu/Roman Urdu well. Cost competitive.  
 **Tradeoff**: Less community tooling than OpenAI ecosystem.
 
-### ADR-004: Two Interaction Modes
-**Decision**: Support both a single-call REST pipeline (`/api/service/request`) and a conversational chat interface (`/api/chat`).  
-**Rationale**: REST pipeline is simpler for testing and batch use. Chat is the production user interface.  
-**Considerations**: Two codepaths for the same business logic, each optimized for its interaction pattern.
+### ADR-004: Single Conversational Interface
+**Decision**: The platform uses the ADK chat interface (`/api/chat`) as the primary interaction mode.
+**Rationale**: Conversational AI handles multi-turn negotiation, clarification, and confirmation naturally. The LLM-driven tool-calling approach adapts to user edge cases without hardcoded branching logic.
+**Considerations**: All booking logic flows through the OrchestratorAgent and its 6 tools, keeping the interaction model consistent.
 
 ### ADR-005: Service-Role Database Access
 **Decision**: The backend uses the Supabase `service_role` key for all database operations.

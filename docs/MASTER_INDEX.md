@@ -34,7 +34,7 @@ The system is unique in its use of **multi-language AI** (English, Urdu script, 
 | **Identity & Auth** | Supabase JWT auth, provider onboarding, session management |
 | **Service Discovery** | Geographic provider search, area canonicalization, service-type aliasing |
 | **Provider Matching** | 10-factor weighted scoring algorithm |
-| **AI Orchestration** | 8-agent sequential pipeline + ADK conversational agent |
+| **AI Orchestration** | ADK conversational agent (Gemini-powered with tool-calling) |
 | **Pricing Engine** | Dynamic pricing from DB config: visit fee + labor + urgency - loyalty + platform fee |
 | **Scheduling** | Availability slot management, conflict detection |
 | **Booking Lifecycle** | confirmed → en_route → arrived → in_progress → completed → feedback |
@@ -44,12 +44,11 @@ The system is unique in its use of **multi-language AI** (English, Urdu script, 
 
 ### Architecture Summary
 
-DigitalKaam is a **Node.js/TypeScript monolith** (single Express process) with two interaction modes:
+DigitalKaam is a **Node.js/TypeScript monolith** (single Express process) with a conversational AI interface:
 
-1. **Antigravity Pipeline** — a REST endpoint (`POST /api/service/request`) that runs 8 AI agents sequentially and returns a complete booking result in one response
-2. **ADK Chat Interface** — a conversational endpoint (`POST /api/chat`) where a single Gemini orchestrator uses tool-calling to drive the same pipeline interactively, with persistent session memory
+- **ADK Chat Interface** — a conversational endpoint (`POST /api/chat`) where a single Gemini orchestrator uses tool-calling to drive booking workflows interactively, with persistent session memory
 
-The database backend is **Supabase (PostgreSQL)**, and AI capabilities are entirely powered by **Google Gemini** (versions 1.5-flash, 2.0-flash, 2.5-flash, and 2.5-flash-preview-tts).
+The database backend is **Supabase (PostgreSQL)**, and AI capabilities are entirely powered by **Google Gemini** (versions 2.0-flash, 2.5-flash, and 2.5-flash-preview-tts).
 
 ---
 
@@ -67,7 +66,7 @@ The database backend is **Supabase (PostgreSQL)**, and AI capabilities are entir
 | 06 | [06_Pricing_Engine.md](06_Pricing_Engine.md) | Exact pricing formulas, worked examples, config management | Developers, Product, Finance |
 | 07 | [07_Loyalty_Point_System.md](07_Loyalty_Point_System.md) | Loyalty discount formula, caps, integration with pricing | Product, Developers, Finance |
 | 08 | [08_Business_Workflows.md](08_Business_Workflows.md) | End-to-end booking flow, dispute flow, onboarding flow, state machine | Product, QA, Operations |
-| 09 | [09_Agent_Flow_Documentation.md](09_Agent_Flow_Documentation.md) | All 8 pipeline agents + ADK orchestrator: inputs, outputs, logic, tool calls | AI Engineers, Developers |
+| 09 | [09_Agent_Flow_Documentation.md](09_Agent_Flow_Documentation.md) | ADK orchestrator agent, tools, specialized agents: inputs, outputs, logic | AI Engineers, Developers |
 | 10 | [10_Queue_Event_System.md](10_Queue_Event_System.md) | Async processing patterns, event flows, notification framework | Developers, Architects |
 | 11 | [11_Security_Review.md](11_Security_Review.md) | Security architecture, implemented controls, and authorization model | Security, Architects |
 | 12 | [12_Observability_Logging.md](12_Observability_Logging.md) | Trace system, log patterns, debugging, and error handling architecture | Developers, SREs |
@@ -85,7 +84,7 @@ The database backend is **Supabase (PostgreSQL)**, and AI capabilities are entir
 - **Purpose**: Understand the overall system design from 10,000 feet
 - **Audience**: All engineers, architects, executives
 - **Dependencies**: None — read this first
-- **Key Concepts**: Antigravity Pipeline, ADK, dual-mode interaction, agent orchestration
+- **Key Concepts**: ADK, tool-calling, agent orchestration
 - **Related Docs**: 02 (structure), 09 (agents), 03 (database)
 
 #### [02_Repository_Structure.md](02_Repository_Structure.md)
@@ -141,7 +140,7 @@ The database backend is **Supabase (PostgreSQL)**, and AI capabilities are entir
 - **Purpose**: Deep technical analysis of every AI agent and tool
 - **Audience**: AI engineers, senior developers, architects
 - **Dependencies**: 01 (architecture), 03 (database)
-- **Key Concepts**: Gemini function calling, 8-agent pipeline, ADK framework, session metadata injection
+- **Key Concepts**: Gemini function calling, ADK framework, session metadata injection
 - **Related Docs**: 01, 06, 08
 
 #### [10_Queue_Event_System.md](10_Queue_Event_System.md)

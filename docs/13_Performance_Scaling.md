@@ -1,5 +1,5 @@
 # Document 13 — Performance Architecture
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Performance Engineering Reference  
 **Audience**: Backend Developers, System Architects, DevOps  
@@ -41,21 +41,7 @@ flowchart LR
 
 ---
 
-### 2.2 Pipeline Request Cost (Per `/api/service/request`)
-
-```
-8 agents × 1 Gemini call each = 8 Gemini API calls
-~12 DB queries (discovery, context, availability, pricing config, booking, availability update, ×8 trace writes)
-Total: ~8 Gemini calls + ~20 DB operations
-```
-
-**Latency**: 8–15 seconds (8 sequential Gemini calls, each 1–2s).
-
-The pipeline uses a **deterministic sequential execution model** — each agent receives clean output from the prior agent, enabling clear reasoning chains and straightforward debugging.
-
----
-
-### 2.3 Pricing Config Loading
+### 2.2 Pricing Config: Direct Database Source of Truth
 
 ```typescript
 // pricingController.ts — reads from platform_config table
@@ -140,12 +126,11 @@ The application uses an in-process state model (agent cache + rate limit counter
 | Operation | Calls Per Request | Model |
 |-----------|-------------------|-------|
 | Chat (avg turn) | 1–3 calls | `gemini-2.5-flash` |
-| Pipeline `/service/request` | 8 calls | `gemini-1.5-flash` |
 | Transcription | 1 call | `gemini-2.0-flash` |
 | TTS | 1 call | `gemini-2.5-flash-preview-tts` |
 | Summarization | 1 call per 8 turns | `gemini-2.5-flash` |
 
-The platform uses `gemini-1.5-flash` for the 8-agent pipeline (cost-efficient for structured classification tasks) and `gemini-2.5-flash` for the ADK conversational orchestrator (maximum capability for open-ended conversation).
+The platform uses `gemini-2.5-flash` for the ADK conversational orchestrator, giving maximum capability for open-ended conversation.
 
 ---
 
@@ -175,7 +160,6 @@ Each `createAuthClient()` call in `middleware/auth.ts` creates a new Supabase cl
 |----------|----------------|----------------|
 | `POST /api/chat` (simple response) | 1–3s | 1 Gemini call |
 | `POST /api/chat` (full booking) | 8–15s | 5–6 sequential Gemini calls |
-| `POST /api/service/request` | 10–20s | 8 sequential Gemini calls |
 | `POST /api/chat/transcribe` | 1–2s | Gemini multimodal processing |
 | `POST /api/chat/speak` | 2–4s | Gemini TTS + PCM→WAV conversion |
 | `GET /api/booking/user/me` | < 100ms | Single DB query |
@@ -223,21 +207,7 @@ flowchart LR
 
 ---
 
-### 2.2 Pipeline Request Cost (Per `/api/service/request`)
-
-```
-8 agents × 1 Gemini call each = 8 Gemini API calls
-~12 DB queries (discovery, context, availability, pricing config, booking, availability update, ×8 trace writes)
-Total: ~8 Gemini calls + ~20 DB operations (sequential)
-```
-
-**Latency estimate**: 8–15 seconds (8 sequential Gemini calls, each 1–2s).
-
-The pipeline uses a **deterministic sequential execution model** — each agent receives clean output from the prior agent, enabling clear reasoning chains and straightforward debugging. Agents 2 (Context) and 4 (Discovery) are architecturally independent, with parallel execution available as a future optimization opportunity.
-
----
-
-### 2.3 Pricing Config: Direct Database Source of Truth
+### 2.2 Pricing Config: Direct Database Source of Truth
 
 ```typescript
 // pricingController.ts — loads config directly from DB
@@ -374,12 +344,9 @@ With Redis added as a shared state layer, the application becomes fully stateles
 | Operation | Calls Per Request | Model | Notes |
 |-----------|-------------------|-------|-------|
 | Chat (avg turn) | 1–3 calls | `gemini-2.5-flash` | More capable, higher cost |
-| Pipeline `/service/request` | 8 calls | `gemini-1.5-flash` | Older, lower cost |
 | Transcription | 1 call | `gemini-2.0-flash` | Multimodal |
 | TTS | 1 call | `gemini-2.5-flash-preview-tts` | Audio output |
 | Summarization | 1 call per 8 turns | `gemini-2.5-flash` | Batched |
-
-**Pipeline optimization opportunity**: Agents 1, 2, and 3 (Intent extraction, Context lookup, Complexity classification) are primarily classification tasks. These offer an opportunity to use lighter models or deterministic rule-based logic, reducing per-request AI cost while maintaining pipeline accuracy.
 
 ---
 
@@ -417,7 +384,6 @@ This is a new JavaScript object on each request but reuses Supabase's underlying
 |----------|----------------|------------------|
 | `POST /api/chat` (simple response) | 1–3s | 1 Gemini call |
 | `POST /api/chat` (full booking) | 8–15s | 5–6 sequential Gemini calls |
-| `POST /api/service/request` | 10–20s | 8 sequential Gemini calls |
 | `POST /api/chat/transcribe` | 1–2s | Gemini multimodal |
 | `POST /api/chat/speak` | 2–4s | Gemini TTS + PCM→WAV |
 | `GET /api/booking/user/me` | < 100ms | Single DB query |

@@ -1,5 +1,5 @@
 # Document 12 — Observability & Logging
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Operations Reference  
 **Audience**: DevOps Engineers, Backend Developers, Operations Team  
@@ -21,13 +21,13 @@ DigitalKaam's observability architecture is built on three integrated primitives
 
 ### 2.1 Trace Structure
 
-Every pipeline agent writes a trace record to the `traces` table upon completion:
+Every ADK tool writes a trace record to the `traces` table upon completion:
 
 ```typescript
 await supabase.from('traces').insert({
   id: uuid(),
   session_id: sessionId,
-  agent: 'IntentAgent',
+  agent: 'OrchestratorAgent',
   input: JSON.stringify(input),
   output: JSON.stringify(output),
   reasoning: 'Human readable explanation of the AI decision',
@@ -40,9 +40,6 @@ await supabase.from('traces').insert({
 
 | Agent | Trace Agent Name | Confidence Behavior |
 |-------|-----------------|---------------------|
-| Intent | `IntentAgent` | `clarificationNeeded ? 0.6 : 0.9` |
-| Context | `ContextAgent` | `isReturningUser ? 0.9 : 0.7` |
-| Complexity | `ComplexityAgent` | Complexity tier dependent |
 | Discovery | `DiscoveryAgent` | `providers.length > 0 ? 0.9 : 0.3` |
 | Matching | `MatchingAgent` | `topProvider.matchScore` |
 | Pricing | `PricingAgent` | 0.9 (deterministic) |
@@ -52,7 +49,7 @@ await supabase.from('traces').insert({
 ### 2.3 Querying Traces
 
 ```bash
-# All traces for a session (full pipeline replay)
+# All traces for a session (full session replay)
 GET /api/traces?sessionId=<uuid>
 
 # Single trace
@@ -65,20 +62,20 @@ GET /api/traces/<trace-id>
   {
     "id": "uuid",
     "session_id": "uuid",
-    "agent": "IntentAgent",
+    "agent": "OrchestratorAgent",
     "input": "{\"userInput\":\"Need AC repair in Gulshan\"}",
     "output": "{\"service\":\"AC Technician\",\"severity\":\"high\",...}",
     "reasoning": "Detected high-urgency AC repair request in Gulshan area",
     "confidence_score": 0.9,
     "created_at": "2026-05-20T10:00:00Z"
   },
-  { "agent": "ContextAgent", ... },
+  { "agent": "FindProvidersTool", ... },
   { "agent": "MatchingAgent", ... }
 ]
 ```
 
 **Use cases**:
-- Replay a full pipeline session to understand every AI decision
+- Replay a full chat session to understand every AI decision
 - Audit pricing decisions for a booking
 - Analyze confidence patterns across agent types
 - Understand provider selection rationale
@@ -121,16 +118,16 @@ All modules use named-prefix logging for clear, searchable output.
 
 ### 4.1 AI Agent Fallback Pattern
 
-All pipeline agents catch errors and return safe defaults, ensuring the pipeline continues processing:
+The ADK agent loop catches errors and returns safe defaults, ensuring conversations continue processing:
 
 ```typescript
-// Pattern applied consistently across all agents
+// Pattern applied consistently across tool handlers
 try {
   const raw = await callGemini(prompt)
   const parsed = JSON.parse(raw)
   return parsed
 } catch (error) {
-  console.error('[IntentAgent] Failed to parse Gemini response:', error)
+  console.error('[OrchestratorAgent] Failed to parse Gemini response:', error)
   return {
     service: 'General Service',
     severity: 'medium',
@@ -140,7 +137,7 @@ try {
 }
 ```
 
-This pattern ensures the 8-agent pipeline completes in all conditions, including partial Gemini API responses.
+This pattern ensures the ADK agent completes gracefully in all conditions, including partial Gemini API responses.
 
 ### 4.2 Route-Level Error Handling
 
@@ -168,7 +165,7 @@ Session ID serves as the primary correlation identifier for chat flows. All data
 - `traces` — all AI decisions in session order
 - `bookings` — any bookings created during the session
 
-**Pipeline sessions** generate a `sessionId` for each `POST /api/service/request` call, stored in `bookings.session_id` and all trace records.
+**Chat sessions** generate a `sessionId` for each `/api/chat` conversation, stored in `bookings.session_id` and all trace records.
 
 ---
 
@@ -235,13 +232,13 @@ LIMIT 100;
 
 ### Trace Structure
 
-Every pipeline agent and some ADK tools write a trace record to the `traces` table upon completion:
+Every ADK tool writes a trace record to the `traces` table upon completion:
 
 ```typescript
 await supabase.from('traces').insert({
   id: uuid(),
   session_id: sessionId,
-  agent: 'IntentAgent',           // agent identifier
+  agent: 'OrchestratorAgent',           // agent identifier
   input: JSON.stringify(input),   // full input object
   output: JSON.stringify(output), // full output object
   reasoning: 'Human readable explanation of the AI decision',
@@ -254,9 +251,6 @@ await supabase.from('traces').insert({
 
 | Agent | Trace Agent Name | Confidence Source |
 |-------|-----------------|------------------|
-| Intent | `IntentAgent` | `clarificationNeeded ? 0.6 : 0.9` |
-| Context | `ContextAgent` | `isReturningUser ? 0.9 : 0.7` |
-| Complexity | `ComplexityAgent` | complexity-dependent |
 | Discovery | `DiscoveryAgent` | `providers.length > 0 ? 0.9 : 0.3` |
 | Matching | `MatchingAgent` | `topProvider.matchScore` |
 | Pricing | `PricingAgent` | 0.9 (deterministic) |
@@ -266,7 +260,7 @@ await supabase.from('traces').insert({
 ### Querying Traces
 
 ```bash
-# All traces for a session (full pipeline replay)
+# All traces for a session (full session replay)
 GET /api/traces?sessionId=<uuid>
 
 # Single trace
@@ -279,14 +273,14 @@ GET /api/traces/<trace-id>
   {
     "id": "uuid",
     "session_id": "uuid",
-    "agent": "IntentAgent",
+    "agent": "OrchestratorAgent",
     "input": "{\"userInput\":\"Need AC repair in Gulshan\"}",
     "output": "{\"service\":\"AC Technician\",\"severity\":\"high\",...}",
     "reasoning": "Detected high-urgency AC repair request in Gulshan area",
     "confidence_score": 0.9,
     "created_at": "2026-05-20T10:00:00Z"
   },
-  { "agent": "ContextAgent", ... },
+  { "agent": "FindProvidersTool", ... },
   { "agent": "MatchingAgent", ... },
   ...
 ]
@@ -338,16 +332,16 @@ There is **no structured logging** (no JSON format, no log levels enumeration, n
 
 ### Pattern: AI Agent Fallbacks
 
-All pipeline agents catch errors and return safe defaults rather than throwing:
+All ADK tool handlers catch errors and return safe defaults rather than throwing:
 
 ```typescript
-// intentController.ts pattern (replicated across all agents)
+// Pattern applied across ADK tool handlers
 try {
   const raw = await callGemini(prompt)
   const parsed = JSON.parse(raw)
   return parsed
 } catch (error) {
-  console.error('[IntentAgent] Failed to parse Gemini response:', error)
+  console.error('[OrchestratorAgent] Failed to parse Gemini response:', error)
   return {
     service: 'General Service',
     severity: 'medium',
@@ -357,7 +351,7 @@ try {
 }
 ```
 
-**Implication**: Pipeline failures are silent. If Gemini returns malformed JSON, the request proceeds with default values that may produce incorrect results. There is no alerting when fallback defaults are used.
+**Implication**: Tool failures are silent. If Gemini returns malformed JSON, the request proceeds with default values that may produce incorrect results. There is no alerting when fallback defaults are used.
 
 ### Pattern: Route-Level Try/Catch
 
@@ -382,7 +376,7 @@ There is **no distributed request tracing** (no trace IDs in headers, no correla
 
 **Session ID** serves as a loose correlation ID for chat flows — all DB operations use `session_id` as a foreign key, enabling post-hoc reconstruction of a session's operations.
 
-**Pipeline sessions** generate a `sessionId` for each `POST /api/service/request` call (visible in the response and stored in `bookings.session_id`).
+**Chat sessions** generate a `sessionId` for each `/api/chat` conversation (stored in `bookings.session_id`).
 
 ---
 

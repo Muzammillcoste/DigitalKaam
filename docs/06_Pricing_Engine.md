@@ -1,5 +1,5 @@
 # Document 06 — Pricing Engine
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Business Logic Reference  
 **Audience**: Developers, Product Managers, Finance, Auditors  

@@ -1,5 +1,5 @@
 # Document 11 — Security Architecture & Controls
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Security Architecture Reference  
 **Audience**: Security Engineers, Backend Developers, Compliance, CTO  
@@ -84,7 +84,7 @@ The `requireAuth` middleware enforces identity on all protected routes:
 |-------------|------------|
 | `POST /api/auth/*` | Public (authentication endpoints) |
 | `/api/booking/*` | `requireAuth` |
-| `POST /api/service/request` | `requireAuth` |
+
 | `POST /api/chat` | `requireAuth` |
 | `/api/admin/*` | `requireAuth` |
 | `/api/provider/*` | `requireAuth` |
@@ -310,7 +310,6 @@ The `requireAuth` middleware is applied to primary transactional routes:
 |-------------|-------------|
 | `POST /api/auth/*` | Public (auth endpoints) |
 | `GET/POST /api/booking/*` | Protected |
-| `POST /api/service/request` | Protected |
 | `POST /api/chat` | Protected |
 | `GET/PUT /api/admin/*` | Protected (expansion: admin role check planned) |
 | `GET /api/provider/*` | Protected |
@@ -411,7 +410,7 @@ Three-tier rate limiting is implemented via `express-rate-limit` to protect both
 | Chat | 20 requests/min | `/api/chat` — Gemini cost protection |
 | Auth | 10 requests/15min | `/api/auth/*` — brute force prevention |
 
-The chat rate limit specifically protects against AI cost amplification: each `/api/service/request` call triggers a sequential chain of Gemini API calls. The per-IP limit ensures predictable cost exposure during development and can be tightened for production launch.
+The chat rate limit specifically protects against AI cost amplification: each `/api/chat` call may trigger multiple Gemini API calls via the ADK agent loop. The per-IP limit ensures predictable cost exposure during development and can be tightened for production launch.
 
 ---
 

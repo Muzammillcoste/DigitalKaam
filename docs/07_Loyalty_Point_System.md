@@ -1,5 +1,5 @@
 # Document 07 — Loyalty Point System
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Business Logic Reference  
 **Audience**: Product Managers, Developers, Finance  
@@ -19,7 +19,7 @@ The DigitalKaam loyalty system rewards repeat customers by applying a discount t
 |-----------|-------|-------------|
 | **Redemption Rate** | 100 points = PKR 50 discount | No (hardcoded) |
 | **Max Discount Per Booking** | PKR 200 (default) | Yes — `loyalty_discount_cap` |
-| **Point Display to User** | Via `contextController` output | — |
+| **Point Display to User** | Via ADK `CalculateQuoteTool` output | — |
 
 ---
 
@@ -59,7 +59,7 @@ The system is architected to handle large point balances, with the discount cap 
 The loyalty discount is applied as a **virtual deduction from the booking price** at calculation time. The discount value is calculated from the user's current point balance and reflected in the full price breakdown stored with the booking.
 
 The discount flows through the system as follows:
-1. User's current point balance is loaded by `contextController`
+1. User's current point balance is loaded from `user_profiles` by the ADK `CalculateQuoteTool`
 2. `pricingController` computes the discount using the formula
 3. The discount is deducted from the booking subtotal
 4. The full `price_breakdown` JSONB with the discount amount is persisted to the booking record
@@ -70,8 +70,8 @@ The discount flows through the system as follows:
 
 ```mermaid
 flowchart LR
-    A["user_profiles\n.loyalty_points"] --> B["contextController\n.processContext()"]
-    B --> C["ContextOutput\n.loyaltyPoints"]
+    A["user_profiles\n.loyalty_points"] --> B["CalculateQuoteTool\n(ADK)"]
+    B --> C["PricingInput\n.loyaltyPoints"]
     C --> D["pricingController\n.processPricing()"]
     D --> E["loyaltyDiscount = min(cap, floor(points/100)×50)"]
     E --> F["Deducted from serviceSubtotal"]
@@ -88,7 +88,7 @@ The discount appears in:
 
 ## 7. Context Loading
 
-`contextController.processContext()` loads loyalty points from the DB before pricing:
+The ADK `CalculateQuoteTool` loads loyalty points from the DB before pricing:
 
 ```typescript
 const { data: profile } = await supabase
@@ -97,7 +97,7 @@ const { data: profile } = await supabase
   .eq('id', userId)
   .single()
 
-const output: ContextOutput = {
+const output: PricingInput = {
   loyaltyPoints: profile?.loyalty_points ?? 0,
   ...
 }

@@ -1,5 +1,5 @@
 # Document 16 — Platform Capabilities Reference
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Capabilities Reference  
 **Audience**: Engineering Team, CTO, Product Managers, Stakeholders  
@@ -13,7 +13,7 @@ DigitalKaam is a full-stack AI-powered service marketplace. This document provid
 
 | Domain | Capabilities |
 |--------|-------------|
-| AI Orchestration | 8-agent sequential pipeline + ADK conversational agent |
+| AI Orchestration | ADK conversational agent |
 | Service Discovery | Geographic provider search, area canonicalization, service aliasing |
 | Provider Matching | 10-factor weighted scoring algorithm |
 | Pricing Engine | Dynamic DB-driven pricing with loyalty integration |
@@ -30,24 +30,7 @@ DigitalKaam is a full-stack AI-powered service marketplace. This document provid
 
 ## 2. AI Orchestration Capabilities
 
-### 2.1 Antigravity Sequential Pipeline
-
-The Antigravity pipeline processes every service request through 8 specialized AI agents in sequence. Each agent receives structured output from the prior agent, building a complete context that drives booking confirmation.
-
-| Agent | Capability |
-|-------|-----------|
-| IntentAgent | Multilingual service request parsing — extracts service type, area, severity, scheduling intent |
-| ContextAgent | User profiling — loyalty status, booking history, returning-user detection, preference loading |
-| ComplexityAgent | Job complexity classification (simple / standard / complex) with labor hour estimation |
-| DiscoveryAgent | Geographic provider search across 15+ Karachi areas with area name canonicalization |
-| MatchingAgent | 10-factor weighted provider scoring producing ranked candidate list |
-| PricingAgent | Full price breakdown with DB-driven fee configuration |
-| SchedulingAgent | Availability slot querying with provider schedule management |
-| BookingAgent | Booking record creation with reference generation and confirmation |
-
-Every agent decision is logged to the `traces` table with the full input/output for auditability.
-
-### 2.2 ADK Conversational Agent
+### 2.1 ADK Conversational Agent
 
 The ADK (Agent Development Kit) provides a persistent conversational interface powered by a Gemini orchestrator that drives the same booking capabilities through natural language interaction.
 
@@ -316,7 +299,6 @@ The platform exposes 12 route groups with 40+ endpoints:
 | `/api/users` | 5 | User profile management |
 | `/api/provider` | 5 | Provider profile and search |
 | `/api/booking` | 7 | Booking CRUD and lifecycle |
-| `/api/service` | 1 | Antigravity pipeline trigger |
 | `/api/chat` | 5 | ADK conversational interface + voice |
 | `/api/availability` | 4 | Provider schedule management |
 | `/api/feedback` | 3 | Review submission |

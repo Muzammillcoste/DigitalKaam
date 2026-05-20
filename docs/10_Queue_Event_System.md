@@ -1,5 +1,5 @@
 # Document 10 — Async Processing Architecture
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Infrastructure Reference  
 **Audience**: Backend Developers, DevOps, System Architects  

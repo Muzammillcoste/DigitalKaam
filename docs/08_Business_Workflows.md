@@ -1,5 +1,5 @@
 # Document 08 — Business Workflows
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Process Reference  
 **Audience**: Product Managers, QA Engineers, Operations, Developers  
@@ -13,8 +13,7 @@ This document describes the end-to-end business processes in DigitalKaam. There 
 1. User Registration
 2. Provider Onboarding
 3. Service Booking (AI Chat)
-4. Service Booking (Direct Pipeline)
-5. Dispute Resolution
+4. Dispute Resolution
 
 ---
 
@@ -221,34 +220,7 @@ The OrchestratorAgent follows a deterministic 5-step process:
 
 ---
 
-## 8. Workflow 5: Service Booking via Direct Pipeline
-
-The Antigravity pipeline (`POST /api/service/request`) runs all 8 agents sequentially in a single API call.
-
-```mermaid
-flowchart LR
-    subgraph "8-Agent Pipeline"
-        A1["1. Intent\nNLP: service, severity,\nlocation, budget"] 
-        --> A2["2. Context\nUser history,\nloyalty points"]
-        --> A3["3. Complexity\nDuration estimate,\ncomplexity class"]
-        --> A4["4. Discovery\nProvider search by\nservice + area"]
-        --> A5["5. Matching\nScore all providers\n10-factor algorithm"]
-        --> A6["6. Pricing\nDynamic quote\ncalculation"]
-        --> A7["7. Scheduling\nFind available slot\nfor requested time"]
-        --> A8["8. Booking\nCreate booking record\nmark slot booked"]
-    end
-
-    REQ["POST\n/api/service/request"] --> A1
-    A8 --> RESP["Response:\nbookingRef, receipt,\nfull session result"]
-```
-
-**Early Exits**:
-1. After Agent 1 (Intent): If Gemini returns `clarificationNeeded = true` → stop, return clarification question
-2. After Agent 5 (Matching): If no providers found → stop, return `noProvidersAvailable`
-
----
-
-## 9. Workflow 6: Booking Status Lifecycle
+## 8. Workflow 5: Booking Status Lifecycle
 
 ```mermaid
 sequenceDiagram
@@ -280,7 +252,7 @@ sequenceDiagram
 
 ---
 
-## 10. Workflow 7: Dispute Resolution
+## 9. Workflow 6: Dispute Resolution
 
 ```mermaid
 flowchart TD
@@ -319,7 +291,7 @@ const refundAmount = Math.round(booking.price * refundPercent)
 
 ---
 
-## 11. Workflow 8: Post-Service Feedback
+## 10. Workflow 7: Post-Service Feedback
 
 ```mermaid
 sequenceDiagram

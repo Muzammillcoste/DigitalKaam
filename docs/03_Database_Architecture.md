@@ -1,5 +1,5 @@
 # Document 03 — Database Architecture
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Database Reference  
 **Audience**: Backend Developers, DBAs, Architects  

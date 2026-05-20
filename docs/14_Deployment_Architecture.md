@@ -1,5 +1,5 @@
 # Document 14 — Deployment Architecture
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Operations Reference  
 **Audience**: DevOps Engineers, System Administrators, Developers  

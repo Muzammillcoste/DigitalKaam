@@ -1,5 +1,5 @@
 # Document 15 — Quality Assurance Strategy
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Quality Engineering Reference  
 **Audience**: Developers, QA Engineers, Engineering Managers  
@@ -254,7 +254,6 @@ describe('ConfirmBookingTool', () => {
 | `disputeController.ts` | 80% | Refund calculation accuracy |
 | `reputationController.ts` | 80% | Rating formula correctness |
 | `adk/Agent.ts` | 70% | Conversational orchestration |
-| Pipeline agents | 60% | Agent input/output contracts |
 
 ---
 
@@ -568,7 +567,6 @@ Add to `package.json`:
 | `disputeController.ts` | 80% | High |
 | `reputationController.ts` | 80% | High |
 | `adk/Agent.ts` | 70% | Medium |
-| Pipeline agents | 60% | Medium |
 
 ---
 

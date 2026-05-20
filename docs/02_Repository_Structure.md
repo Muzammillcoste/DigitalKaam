@@ -1,5 +1,5 @@
 # Document 02 — Repository Structure
-## DigitalKaam Antigravity AI Service Platform
+## DigitalKaam AI Service Platform
 
 **Document Type**: Developer Reference  
 **Audience**: New Developers, Contributors  
@@ -70,9 +70,6 @@ backend/
     │       └── GetBookingsTool.ts         # Tool: retrieve session bookings
     │
     ├── controllers/          # Business logic layer — pure functions
-    │   ├── intentController.ts        # Gemini NLP → structured intent
-    │   ├── contextController.ts       # User profile + loyalty retrieval
-    │   ├── complexityController.ts    # Gemini job complexity classifier
     │   ├── discoveryController.ts     # Provider DB search + area aliasing
     │   ├── matchingController.ts      # 10-factor provider scoring
     │   ├── pricingController.ts       # Dynamic pricing engine
@@ -92,13 +89,9 @@ backend/
     ├── middleware/
     │   └── auth.ts            # JWT verification + auto-refresh
     │
-    ├── orchestrator/
-    │   └── antigravity.ts     # 8-agent sequential pipeline runner
-    │
     └── routes/                # HTTP route definitions
         ├── auth.routes.ts         # /api/auth
         ├── chat.routes.ts         # /api/chat  ← most complex route
-        ├── service.routes.ts      # /api/service
         ├── booking.routes.ts      # /api/booking
         ├── dispute.routes.ts      # /api/dispute
         ├── provider.routes.ts     # /api/provider
@@ -174,9 +167,6 @@ All controllers use the shared `supabase` singleton for DB access.
 
 **Controller dependency graph**:
 ```
-intentController → (Gemini, DB:traces)
-contextController → (DB:user_profiles, DB:traces)
-complexityController → (Gemini, DB:traces)
 discoveryController → (DB:providers, DB:traces)
 matchingController → (DB:availability, DB:traces)
 pricingController → (DB:platform_config, DB:traces)
@@ -187,29 +177,16 @@ reputationController → (DB:feedback, DB:providers, DB:reputation, DB:traces)
 disputeController → (DB:disputes, DB:bookings, DB:reputation, DB:traces)
 ```
 
-### 4.4 `src/orchestrator/antigravity.ts` — Sequential Pipeline
-
-Calls all 8 controllers in order. Contains the full pipeline orchestration logic including:
-- Early exit on `clarificationNeeded` from intent
-- Early exit on `noProvidersAvailable` from matching
-- Error handling (catches any controller exception)
-
-**Used exclusively by**: `POST /api/service/request` (via `service.routes.ts`)
-
-### 4.5 `src/lib/` — Shared Libraries
+### 4.4 `src/lib/` — Shared Libraries
 
 **`supabase.ts`**: Creates and exports the **single shared Supabase client** using `service_role` key. This client has full database access (bypasses RLS). All controllers use this singleton.
 
 **`gemini.ts`**: Exports:
-- `geminiModel` — `@google/generative-ai` v1 client for simple text generation (used by `intentController`, `complexityController`)
-- `callGemini(prompt)` — simple string-in/string-out Gemini wrapper
 - `transcribeAudio(base64, mimeType)` — multimodal audio → text using `gemini-2.0-flash`
 - `generateSpeech(text, voice)` — TTS using `gemini-2.5-flash-preview-tts`, returns base64 WAV
 - `pcmToWav(pcm)` — internal PCM-to-WAV converter (Gemini TTS returns raw PCM)
 
-> **Important**: `lib/gemini.ts` uses **two different** Gemini SDK clients:
-> - `@google/generative-ai` (`genAI`) — older SDK, used for simple text prompts
-> - `@google/genai` (`genAI2`) — newer SDK, used for audio, TTS, and the ADK Agent class
+> **Note**: `lib/gemini.ts` uses the `@google/genai` SDK for audio and TTS operations, with the `Agent` class handling all conversational interactions.
 
 ### 4.6 `src/middleware/auth.ts` — Authentication Guard
 
@@ -275,13 +252,11 @@ The `mobile/utils/api.ts` contains a complete API client wrapper (`api.service.r
 
 1. **`supabase` singleton** (`lib/supabase.ts`): The shared Supabase client used by all controllers for consistent, authenticated database access.
 
-2. **Dual Gemini SDK usage** (`lib/gemini.ts`): `intentController` and `complexityController` use the `@google/generative-ai` SDK for text generation. The `Agent` class uses `@google/genai` for the full conversational function-calling loop.
+2. **`AREA_COORDS` constant**: Geographic coordinate mapping defined in both `discoveryController.ts` and `matchingController.ts` for Karachi area-based calculations.
 
-3. **`AREA_COORDS` constant**: Geographic coordinate mapping defined in both `discoveryController.ts` and `matchingController.ts` for Karachi area-based calculations.
+3. **Pricing defaults**: Hardcoded in `pricingController.ts` as `const DEFAULTS`, providing resilient fallbacks when DB config is not available.
 
-4. **Pricing defaults**: Hardcoded in `pricingController.ts` as `const DEFAULTS`, providing resilient fallbacks when DB config is not available.
-
-5. **`agentCache`**: A module-level `Map` in `chat.routes.ts` providing fast in-process access to active `OrchestratorAgent` instances.
+4. **`agentCache`**: A module-level `Map` in `chat.routes.ts` providing fast in-process access to active `OrchestratorAgent` instances.
 
 ---
 
@@ -291,7 +266,7 @@ The `mobile/utils/api.ts` contains a complete API client wrapper (`api.service.r
 |-------------|------|------|-------------|
 | HTTP Server | `src/index.ts` | — | Starts Express, mounts routes |
 | Chat API | `src/routes/chat.routes.ts` | JWT required | Main user-facing chat |
-| Pipeline API | `src/routes/service.routes.ts` | None | Direct 8-agent pipeline |
+
 | Auth API | `src/routes/auth.routes.ts` | Mixed | Login, signup, profile |
 | Seed Script | `src/data/seed.ts` | — | CLI — seeds DB with test data |
 
