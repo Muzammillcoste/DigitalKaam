@@ -10,17 +10,6 @@ const router = Router()
 // Require valid JWT on all booking routes
 router.use(requireAuth)
 
-// GET /api/booking/:bookingId — fetch booking + receipt
-router.get('/:bookingId', async (req: Request, res: Response) => {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*, providers(name, phone, service_type, area, rating)')
-    .eq('id', req.params.bookingId)
-    .single()
-  if (error) return res.status(404).json({ error: 'Booking not found' })
-  return res.json(data)
-})
-
 // GET /api/booking/user/me — all bookings for the authenticated user
 router.get('/user/me', async (req: Request, res: Response) => {
   const userId = req.user!.id
@@ -30,6 +19,47 @@ router.get('/user/me', async (req: Request, res: Response) => {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
+  return res.json(data)
+})
+
+// GET /api/booking/provider/:providerId — all bookings for a provider
+// Only the owner provider account can access their own bookings.
+router.get('/provider/:providerId', async (req: Request, res: Response) => {
+  const providerId = req.params.providerId
+  const authUserId = req.user!.id
+
+  const { data: provider, error: providerError } = await supabase
+    .from('providers')
+    .select('id, user_id')
+    .eq('id', providerId)
+    .single()
+
+  if (providerError || !provider) {
+    return res.status(404).json({ error: 'Provider not found' })
+  }
+
+  if (provider.user_id !== authUserId) {
+    return res.status(403).json({ error: 'Forbidden: you can only view your own provider bookings' })
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, providers(name, email, phone, service_type, area, rating), user_profiles(full_name, phone, email, home_area)')
+    .eq('provider_id', providerId)
+    .order('created_at', { ascending: false })
+
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json(data)
+})
+
+// GET /api/booking/:bookingId — fetch booking + receipt
+router.get('/:bookingId', async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, providers(name, phone, service_type, area, rating)')
+    .eq('id', req.params.bookingId)
+    .single()
+  if (error) return res.status(404).json({ error: 'Booking not found' })
   return res.json(data)
 })
 
