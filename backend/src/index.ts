@@ -74,10 +74,12 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 DigitalKaam Antigravity API running on http://localhost:${PORT}`)
-  console.log(`   Health: http://localhost:${PORT}/health`)
-  console.log(`   Service Request: POST http://localhost:${PORT}/api/service/request\n`)
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`\n🚀 DigitalKaam Antigravity API running on http://localhost:${port}`)
+  console.log(`   Health: http://localhost:${port}/health`)
+  console.log(`   Service Request: POST http://localhost:${port}/api/service/request\n`)
 })
 
 export default app

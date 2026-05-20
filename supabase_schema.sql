@@ -121,16 +121,7 @@ CREATE TABLE IF NOT EXISTS public.feedback (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Disable Row Level Security (RLS) for testing via backend API using Service Role
--- In a production environment, RLS should be enabled and policies defined.
-ALTER TABLE public.user_profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.providers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.availability DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.bookings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reputation DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.traces DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.disputes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.feedback DISABLE ROW LEVEL SECURITY;
+
 
 -- 9. Chat Messages table (persistent conversation history)
 CREATE TABLE IF NOT EXISTS public.chat_messages (
@@ -153,8 +144,7 @@ CREATE TABLE IF NOT EXISTS public.chat_sessions (
     last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE public.chat_messages DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chat_sessions DISABLE ROW LEVEL SECURITY;
+
 
 -- 11. Platform configuration table (edit values here to change fees/limits without code deploys)
 -- Update any value with: UPDATE platform_config SET value = '150', updated_at = NOW() WHERE key = 'platform_fee_fixed';

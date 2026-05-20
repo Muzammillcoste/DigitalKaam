@@ -4,6 +4,7 @@ import { summarizeConversation, MessageTurn } from '../adk/agents/SummarizerAgen
 import { Agent } from '../adk/Agent'
 import { requireAuth } from '../middleware/auth'
 import { supabase } from '../lib/supabase'
+import { transcribeAudio, generateSpeech } from '../lib/gemini'
 
 const router = Router()
 
@@ -364,5 +365,182 @@ router.get('/history', async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message })
   }
 })
+
+/**
+ * POST /api/chat/transcribe
+ * Standalone audio-to-text using Gemini multimodal.
+ * Mobile calls this to show the user what was heard before sending to /api/chat.
+ *
+ * Body: { audio: string (base64), mimeType: string }
+ * Returns: { transcription: string }
+ *
+ * Supported mimeTypes: audio/m4a | audio/mp4 | audio/wav | audio/webm | audio/ogg
+ * Audio size limit: 20MB (Gemini inline data cap — typical voice msg is <1MB)
+ */
+router.post('/transcribe', async (req: Request, res: Response) => {
+  const { audio, mimeType } = req.body
+
+  if (!audio || !mimeType) {
+    return res.status(400).json({ error: 'audio (base64) and mimeType are required' })
+  }
+
+  const SUPPORTED_TYPES = ['audio/m4a', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/mpeg']
+  if (!SUPPORTED_TYPES.includes(mimeType)) {
+    return res.status(400).json({ error: `Unsupported mimeType. Use one of: ${SUPPORTED_TYPES.join(', ')}` })
+  }
+
+  // Rough size check: base64 is ~4/3 of raw bytes. 20MB raw ≈ 27MB base64
+  if (audio.length > 27 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Audio too large. Max 20MB.' })
+  }
+
+  try {
+    console.log(`[Chat/Transcribe] Transcribing audio — mimeType=${mimeType} size=${(audio.length / 1024).toFixed(1)}KB`)
+    const transcription = await transcribeAudio(audio, mimeType)
+    console.log(`[Chat/Transcribe] Result: "${transcription}"`)
+    return res.json({ transcription })
+  } catch (error: any) {
+    console.error('[Chat/Transcribe] Error:', error.message)
+    return res.status(500).json({ error: `Transcription failed: ${error.message}` })
+  }
+})
+
+/**
+ * POST /api/chat/voice
+ * Full voice pipeline: Audio in → STT → Orchestrator AI → TTS → Audio out
+ *
+ * Body: { audio: string (base64), mimeType: string, sessionId: string, voice?: string }
+ * Returns: { transcription, response, audioBase64, audioMimeType, userId, turnCount }
+ *
+ * transcription — what Gemini heard (show as user's chat bubble)
+ * response      — AI text reply (show as AI chat bubble)
+ * audioBase64   — base64 WAV of spoken response (play directly)
+ * audioMimeType — always 'audio/wav'
+ */
+router.post('/voice', async (req: Request, res: Response) => {
+  const { audio, mimeType, sessionId, voice = 'Kore' } = req.body
+  const userId = req.user!.id
+
+  if (!audio || !mimeType || !sessionId) {
+    return res.status(400).json({ error: 'audio (base64), mimeType, and sessionId are required' })
+  }
+
+  console.log(`\n[Chat/Voice] userId='${userId}' sessionId='${sessionId}' mimeType=${mimeType}`)
+
+  try {
+    // ── Step 1: STT — transcribe audio to text ────────────────────────────────
+    console.log('[Chat/Voice] Step 1 — Transcribing audio...')
+    const transcription = await transcribeAudio(audio, mimeType)
+
+    if (!transcription) {
+      return res.status(422).json({ error: 'Could not transcribe audio. Please speak clearly and try again.' })
+    }
+    console.log(`[Chat/Voice] Transcription: "${transcription}"`)
+
+    // ── Step 2: AI — run through orchestrator ────────────────────────────────
+    console.log('[Chat/Voice] Step 2 — Running AI orchestrator...')
+    const chatResponse = await runChatAndReturnResponse(userId, transcription, sessionId)
+    console.log(`[Chat/Voice] AI response: "${chatResponse.response.slice(0, 80)}..."`)
+
+    // ── Step 3: TTS — convert AI response to speech ──────────────────────────
+    console.log(`[Chat/Voice] Step 3 — Generating speech (voice=${voice})...`)
+    const audioBase64 = await generateSpeech(chatResponse.response, voice)
+    console.log(`[Chat/Voice] TTS done — WAV size=${(audioBase64.length / 1024).toFixed(1)}KB (base64)`)
+
+    return res.json({
+      transcription,
+      response:      chatResponse.response,
+      audioBase64,
+      audioMimeType: 'audio/wav',
+      userId,
+      turnCount:     chatResponse.turnCount,
+    })
+  } catch (error: any) {
+    console.error('[Chat/Voice] Error:', error.message)
+    return res.status(500).json({ error: error.message })
+  }
+})
+
+/**
+ * Shared logic extracted from POST /api/chat so both /chat and /voice can use it
+ * without code duplication or internal HTTP calls.
+ */
+async function runChatAndReturnResponse(
+  userId: string,
+  message: string,
+  sessionId: string
+): Promise<{ response: string; turnCount: number }> {
+  // Session lookup / creation
+  let { data: sessionData } = await supabase
+    .from('chat_sessions')
+    .select('*')
+    .eq('session_id', sessionId)
+    .single()
+
+  if (!sessionData) {
+    const { data: newSession, error: insertError } = await supabase
+      .from('chat_sessions')
+      .insert({ session_id: sessionId, user_id: userId, summary: '', turn_count: 0 })
+      .select()
+      .single()
+    if (insertError) throw new Error(`Session creation failed: ${insertError.message}`)
+    sessionData = newSession
+  }
+
+  const currentTurnCount: number = sessionData?.turn_count || 0
+  const existingSummary: string  = sessionData?.summary || ''
+
+  // Load recent messages
+  const { data: recentMessagesDesc } = await supabase
+    .from('chat_messages')
+    .select('role, content, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(WINDOW_SIZE)
+  const recentMessages = recentMessagesDesc ? [...recentMessagesDesc].reverse() : []
+
+  // Build / retrieve agent
+  let agent = agentCache.get(sessionId)
+  const summaryBlock = existingSummary ? `\nConversation Summary So Far:\n${existingSummary}\n` : ''
+  const staticUserContext =
+    `\nIMPORTANT CONTEXT:` +
+    `\n- The authenticated user's ID is '${userId}'. Use this as 'userId' in 'confirm_service_booking'.` +
+    `\n- The current session ID is '${sessionId}'.` +
+    `\n${summaryBlock}`
+
+  if (!agent) {
+    agent = new Agent({
+      name: orchestratorAgent.name,
+      instructions: orchestratorAgent.instructions + staticUserContext,
+      tools: orchestratorAgent.tools,
+    })
+    agent.baseInstructions = orchestratorAgent.instructions + staticUserContext
+    for (const msg of recentMessages) {
+      agent.memory.addMessage(msg.role === 'user' ? 'user' : 'model', [{ text: msg.content }])
+    }
+    agentCache.set(sessionId, agent)
+  }
+
+  agent.sessionMetadata = { sessionId, userId }
+  const freshBookingFacts = await buildBookingFactsBlock(sessionId)
+  agent.instructions = agent.baseInstructions + (freshBookingFacts ?? '')
+
+  // Persist user message
+  await supabase.from('chat_messages').insert({ session_id: sessionId, user_id: userId, role: 'user', content: message })
+
+  // Run agent
+  const responseText = await agent.run(message)
+
+  // Persist AI response
+  await supabase.from('chat_messages').insert({ session_id: sessionId, user_id: userId, role: 'assistant', content: responseText })
+
+  // Update turn count
+  await supabase
+    .from('chat_sessions')
+    .update({ turn_count: currentTurnCount + 1, last_active: new Date().toISOString() })
+    .eq('session_id', sessionId)
+
+  return { response: responseText, turnCount: currentTurnCount + 1 }
+}
 
 export default router
