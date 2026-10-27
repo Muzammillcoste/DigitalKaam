@@ -278,26 +278,20 @@ None yet. The repository has no unit, integration or end-to-end test suite.
 
 ### Known limitations
 
-- **Simulated operations.** Push notifications and dispute refunds are not carried out. The app requests notification permission, but the backend does not yet send push messages.
-- **Confirmation depends on the model.** Getting explicit confirmation before booking relies on the model following its instructions. The booked price is the value the model passes to the booking tool; the server does not recompute it.
-- **Authorisation is prototype-level.** The chat, booking and provider-account routes require login, but access control is not yet applied consistently across all REST routes. There are no separate customer, provider or admin roles.
+
 - **Language coverage:**
   - Roman Urdu is supported in chat only, through the model's instructions.
   - The interface supports English and Urdu script, and some screens are not yet translated.
   - Urdu-script chat and the Urdu interface were not evaluated with participants.
-- **Provider mode state.** A provider profile is not reloaded at login, so provider mode is available only in the session where the profile was created or edited. Newly registered providers have no availability slots until some are added.
 - **Geography.** Matching uses coordinates for a fixed list of Karachi areas.
-- **Legacy endpoint.** `POST /api/service/request` is kept for reference. It has not been re-verified with current Gemini models.
 
 ### Selected next steps
 
 1. A first-run overview of the app's features, based on participant feedback.
-2. Enforce confirmation on the server: store the quoted booking as pending, and create it only after an explicit confirmation request.
-3. Apply ownership checks and role-based authorisation consistently across all routes, and enable row-level security policies.
-4. Automated tests for the deterministic parts (pricing, matching score, booking references, rating updates), plus API integration tests with the LLM mocked.
-5. A structured usability study with a task script, recorded languages and participant consent, including Urdu-script input.
-6. Connect loyalty points and urgency to the chat quote, which currently assumes medium urgency and no loyalty discount.
-7. Reload the provider profile at login, let providers manage their own availability slots, and send real push notifications.
+2. Automated tests for the deterministic parts (pricing, matching score, booking references, rating updates), plus API integration tests with the LLM mocked.
+3. A structured usability study with a task script, recorded languages and participant consent, including Urdu-script input.
+4. Connect loyalty points and urgency to the chat quote, which currently assumes medium urgency and no loyalty discount.
+
 
 ---
 
