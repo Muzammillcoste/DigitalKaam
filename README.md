@@ -2,6 +2,8 @@
 
 DigitalKaam is a team-built prototype of a chat-based home-services booking app for Karachi. It consists of an Expo (React Native) mobile app, an Express/TypeScript backend, Supabase (Postgres and Auth) and Google Gemini.
 
+📄 **Presentation slides (PDF):** [docs/Digital Kaam.pdf](docs/Digital%20Kaam.pdf)
+
 How it works:
 - A customer describes a problem in English or Roman Urdu.
 - The assistant collects the missing details, ranks seeded providers and checks a time slot.
